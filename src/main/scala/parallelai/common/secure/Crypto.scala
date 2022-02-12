@@ -1,6 +1,6 @@
 package parallelai.common.secure
 
-import java.security.{ Key, MessageDigest }
+import java.security.{ AlgorithmParameters, Key, MessageDigest }
 import java.util.Base64
 import javax.crypto._
 import javax.crypto.spec.{ DESKeySpec, PBEKeySpec, PBEParameterSpec, SecretKeySpec }
@@ -10,6 +10,7 @@ import com.sun.crypto.provider.AESKeyGenerator
 sealed trait Algorithm {
   def name: String
   def value: String
+  //  def keySpec(secret: Array[Byte]): SecretKeySpec = new SecretKeySpec(secret, value)
   override def toString = name
 }
 
@@ -31,12 +32,14 @@ case object NONE extends Algorithm {
 }
 case object AES extends Algorithm {
   def name = "AES"
-  def value = "AES"
+  def value = "AES/CBC/PKCS5Padding"
 }
 case object DES extends Algorithm {
   def name = "DES"
-  def value = "DES"
+  def value = "DES/CBC/PKCS5Padding"
 }
+
+case class CryptoResult[T](payload: T, params: Option[Array[Byte]] = None)
 
 object Algorithm {
   def apply(name: String): Algorithm = {
@@ -52,19 +55,21 @@ object Algorithm {
   }
 }
 
-trait WithCrypto {
-  private var algorithm: Algorithm = null
-  private var secret: Array[Byte] = null
+class CryptoMechanic(algorithm: Algorithm = AES, secret: Array[Byte]) extends ConversionHelper {
+  //  private var algorithm: Algorithm = null
+  //  private var secret: Array[Byte] = null
   private var charset: String = "utf-8"
 
-  def setAlgorithm(alg: Algorithm) = algorithm = alg
-  def setSecret(sec: Array[Byte]) = secret = sec
+  new SecretKeySpec(secret, 0, 16, "AES")
+
+  //  def setAlgorithm(alg: Algorithm) = algorithm = alg
+  //  def setSecret(sec: Array[Byte]) = secret = sec
   def setCharset(set: String) = charset = set
 
   def getAlgorithm = algorithm
   def getCharset = charset
 
-  def getSignature(payload: String): Array[Byte] = {
+  def getSignature(payload: Array[Byte]): Array[Byte] = {
     require(algorithm != null, "Algorithm not set")
     require(secret != null, "Secret not set")
 
@@ -72,9 +77,9 @@ trait WithCrypto {
       case HS256 | HS384 | HS512 => {
         val mac: Mac = Mac.getInstance(algorithm.value)
         mac.init(new SecretKeySpec(secret, algorithm.value))
-        mac.doFinal(payload.getBytes(charset))
+        mac.doFinal(payload)
       }
-      case AES | DES => encrypt(payload)
+      case AES | DES => encrypt(payload, None).payload
       case NONE => "".getBytes(charset)
     }
   }
@@ -88,10 +93,10 @@ trait WithCrypto {
     require(algorithm != null)
 
     algorithm match {
-      case AES => (new SecretKeySpec(secret, algorithm.value)).asInstanceOf[Key]
+      case AES => new SecretKeySpec(secret, 0, 16, algorithm.name)
       case DES => {
         val keySpec = new DESKeySpec(secret)
-        SecretKeyFactory.getInstance(algorithm.value).generateSecret(keySpec)
+        SecretKeyFactory.getInstance(algorithm.name).generateSecret(keySpec)
       }
       case _ => new Key {
         override def getEncoded: Array[Byte] = secret
@@ -103,6 +108,36 @@ trait WithCrypto {
     }
   }
 
+  private def perform[I, O](msg: I, dir: CIPHER, cipherParams: Option[Array[Byte]] = None)(implicit i: I => Array[Byte], o: Array[Byte] => O): CryptoResult[O] = {
+    require(algorithm match {
+      case AES | DES => true
+      case _ => false
+    }, s"Cannot ${dir} with Algorithm ${algorithm}")
+
+    val cipher = Cipher.getInstance(algorithm.value)
+
+    val secretKeySpec = getSecretKey()
+
+    cipherParams match {
+      case None => cipher.init(dir.mode, secretKeySpec)
+      case Some(p) => {
+        val algoParms = AlgorithmParameters.getInstance(algorithm.name)
+        algoParms.init(p)
+        cipher.init(dir.mode, secretKeySpec, algoParms)
+      }
+    }
+
+    val payload = cipher.doFinal(msg)
+    val params = cipher.getParameters.getEncoded
+
+    CryptoResult[O](payload, Some(params))
+  }
+
+  def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] = perform(msg, ENCRYPT, params)
+  def decrypt[I, O](code: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] = perform(code, DECRYPT, params)
+}
+
+trait ConversionHelper {
   def toB64[I, O](bytes: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = Base64.getEncoder.encode(bytes)
   def fromB64[I, O](b64: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = Base64.getDecoder.decode(b64)
 
@@ -118,31 +153,37 @@ trait WithCrypto {
     o
   }
 
-  sealed trait CIPHER {
-    def mode: Int
-  }
-  case object ENCRYPT extends CIPHER {
-    def mode: Int = Cipher.ENCRYPT_MODE
-  }
-  case object DECRYPT extends CIPHER {
-    def mode: Int = Cipher.DECRYPT_MODE
-  }
-
-  implicit def stringToBytes(s: String): Array[Byte] = s.getBytes(charset)
+  implicit def stringToBytes(s: String): Array[Byte] = s.getBytes()
   implicit def bytesToString(b: Array[Byte]): String = new String(b)
 
-  private def perform[I, O](msg: I, dir: CIPHER)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = {
-    require(algorithm match {
-      case AES | DES => true
-      case _ => false
-    }, s"Cannot ${dir} with Algorithm ${algorithm}")
-
-    val cipher = Cipher.getInstance(algorithm.value)
-    cipher.init(dir.mode, getSecretKey())
-    cipher.doFinal(msg)
+  /*
+   * Converts a byte to hex digit and writes to the supplied buffer
+   */
+  def byte2hex(b: Byte, buf: StringBuffer): Unit = {
+    val hexChars = Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
+    val high = (b & 0xf0) >> 4
+    val low = b & 0x0f
+    buf.append(hexChars(high))
+    buf.append(hexChars(low))
   }
 
-  def encrypt[I, O](msg: I)(implicit m: I => Array[Byte], n: Array[Byte] => O): O = perform(msg, ENCRYPT)
-  def decrypt[I, O](code: I)(implicit m: I => Array[Byte], n: Array[Byte] => O): O = perform(code, DECRYPT)
-}
+  /*
+   * Converts a byte array to hex string
+   */
+  def toHexString(block: Array[Byte]) = {
+    val buf = new StringBuffer
+    val len = block.length
+    var i = 0
+    while ({
+      i < len
+    }) {
+      byte2hex(block(i), buf)
+      if (i < len - 1) buf.append(":")
 
+      {
+        i += 1; i - 1
+      }
+    }
+    buf.toString
+  }
+}

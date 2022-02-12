@@ -50,15 +50,13 @@ trait KeySupport {
   }
 }
 
-object DefaultDESCrypto extends WithCrypto with KeySupport {
+object DefaultDESCrypto extends KeySupport {
   val keyStoreName: String = "testKeyStore"
   val keyStoreType: String = "jks"
   val keyStorePass: String = "password"
   val keyAlias: String = "test"
 
-  // Set the Algorithm to AES
-  setAlgorithm(DES)
-  setSecret(getDefaultSecret)
-  setCharset("utf-8")
+  val crypto = new CryptoMechanic(DES, getDefaultSecret)
+  crypto.setCharset("utf-8")
 }
 

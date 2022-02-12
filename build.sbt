@@ -23,6 +23,8 @@ lazy val sot_common_secure = (project in file(".")).
     ),
     resolvers += sbtResolver.value,
     libraryDependencies += scalaTest % Test,
+    libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4",
+    libraryDependencies += "joda-time" % "joda-time" % "2.9.9",
     assemblyMergeStrategy in assembly := {
       case "application.conf"                            => MergeStrategy.concat
       case "project.properties"                          => MergeStrategy.concat
