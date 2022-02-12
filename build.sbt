@@ -9,7 +9,7 @@ lazy val sot_common_secure = (project in file(".")).
     inThisBuild(List(
       organization := "parallelai",
       scalaVersion := "2.12.4",
-      version      := "0.1.0"
+      version      := "0.1.1"
     )),
     name := "sot_common_secure",
     s3region := Region.getRegion(Regions.EU_WEST_2),
