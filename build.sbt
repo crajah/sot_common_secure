@@ -3,13 +3,14 @@ import sbt.Resolver
 import sbt.Keys.{libraryDependencies, publishTo}
 import com.amazonaws.regions.{Region, Regions}
 
+lazy val scala_2_11 = "2.11.11"
+lazy val scala_2_12 = "2.12.4"
 
 lazy val sot_common_secure = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "parallelai",
-      scalaVersion := "2.11.11",
-      version      := "0.1.3"
+      scalaVersion := scala_2_11
     )),
     name := "sot_common_secure",
     s3region := Region.getRegion(Regions.EU_WEST_2),
@@ -21,13 +22,14 @@ lazy val sot_common_secure = (project in file(".")).
       s3resolver.value("Parallel AI S3 Releases resolver", s3("release.repo.parallelai.com")) withMavenPatterns,
       s3resolver.value("Parallel AI S3 Snapshots resolver", s3("snapshot.repo.parallelai.com")) withMavenPatterns
     ),
+    crossScalaVersions := Seq(scala_2_11, scala_2_12),
     resolvers += sbtResolver.value,
     libraryDependencies += scalaTest % Test,
     libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4",
     libraryDependencies += "joda-time" % "joda-time" % "2.9.9",
     assemblyMergeStrategy in assembly := {
-      case "application.conf"                            => MergeStrategy.concat
-      case "project.properties"                          => MergeStrategy.concat
+      case "application.conf" => MergeStrategy.concat
+      case "project.properties" => MergeStrategy.concat
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
