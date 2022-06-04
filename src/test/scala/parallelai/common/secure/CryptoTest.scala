@@ -1,20 +1,16 @@
 package parallelai.common.secure
 
-import java.security.MessageDigest
-
 import org.scalatest._
 
 class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
-
   "AES" should "encrypt and decrypt" in {
     val crypto = new CryptoMechanic(AES, "Some secrrem is not a secret but secretly some".getBytes()) {}
 
     val clear = "This is a new logic".getBytes()
-
     val ec_r = crypto.encrypt(clear)
-    val de_r = crypto.decrypt(ec_r.payload, ec_r.params).payload
+    val de_r = crypto.decrypt(ec_r.payload, ec_r.params)
 
-    clear shouldEqual de_r
+    clear shouldEqual de_r.payload
   }
 
   "DES" should "encrypt and decrypt" in {

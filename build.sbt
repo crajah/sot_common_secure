@@ -1,3 +1,4 @@
+import scala.language.postfixOps
 import Dependencies._
 import sbt.Resolver
 import sbt.Keys.{libraryDependencies, publishTo}
@@ -6,56 +7,42 @@ import com.amazonaws.regions.{Region, Regions}
 lazy val scala_2_11 = "2.11.11"
 lazy val scala_2_12 = "2.12.4"
 
-lazy val sot_common_secure = (project in file(".")).
-  settings(
+lazy val assemblySettings = assemblyMergeStrategy in assembly := {
+  case "application.conf" => MergeStrategy.concat
+  case "project.properties" => MergeStrategy.concat
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}
+
+lazy val sot_common_secure = (project in file("."))
+  .settings(
+    name := "sot_common_secure",
     inThisBuild(List(
       organization := "parallelai",
       scalaVersion := scala_2_11
     )),
-    name := "sot_common_secure",
+    crossScalaVersions := Seq(scala_2_11, scala_2_12),
+    assemblySettings,
     s3region := Region.getRegion(Regions.EU_WEST_2),
     publishTo := {
       val prefix = if (isSnapshot.value) "snapshot" else "release"
-      Some(s3resolver.value("Parallel AI "+prefix+" S3 bucket", s3(prefix+".repo.parallelai.com")) withMavenPatterns)
+      Some(s3resolver.value(s"Parallel AI $prefix S3 bucket", s3(s"$prefix.repo.parallelai.com")) withMavenPatterns)
     },
     resolvers ++= Seq[Resolver](
+      Resolver.sonatypeRepo("releases"),
+      Resolver.sonatypeRepo("snapshots"),
       s3resolver.value("Parallel AI S3 Releases resolver", s3("release.repo.parallelai.com")) withMavenPatterns,
       s3resolver.value("Parallel AI S3 Snapshots resolver", s3("snapshot.repo.parallelai.com")) withMavenPatterns
     ),
-    crossScalaVersions := Seq(scala_2_11, scala_2_12),
     resolvers += sbtResolver.value,
-    libraryDependencies += scalaTest % Test,
-    libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4",
-    libraryDependencies += "joda-time" % "joda-time" % "2.9.9",
-    assemblyMergeStrategy in assembly := {
-      case "application.conf" => MergeStrategy.concat
-      case "project.properties" => MergeStrategy.concat
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
-
+    libraryDependencies ++= Seq(
+      scalaTest % Test
+    ),
+    libraryDependencies ++= Seq(
+      sprayJson,
+      jodaTime,
+      grizzledLogging,
+      logback
+    )
   )
-
-// to run in docker
-// docker run -v ~/.config:/root/.config
-// --env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_ladbroke_credentials.json
-// -p 8080:8080 parallelai/sot_lcm
-
-enablePlugins(DockerPlugin)
-
-dockerfile in docker := {
-  // The assembly task generates a fat JAR file
-  val artifact: File = assembly.value
-  val artifactTargetPath = s"/app/${artifact.name}"
-
-  new Dockerfile {
-    from("java")
-    expose(8080)
-    volume("/root/.config")
-    add(artifact, artifactTargetPath)
-    entryPoint("java", "-jar", artifactTargetPath)
-  }
-}
-
-buildOptions in docker := BuildOptions(cache = false)

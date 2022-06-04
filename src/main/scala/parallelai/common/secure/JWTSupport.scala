@@ -1,24 +1,14 @@
 package parallelai.common.secure
 
-import java.util.Base64
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-
-import org.joda.time._
-import org.joda.time.DateTime.now
-import org.joda.time.format.ISODateTimeFormat
-
-import spray.json._
-
+import java.util.{ Base64, UUID }
 import scala.concurrent.Future
 import scala.util.Try
+import spray.json._
+import org.joda.time.DateTime.now
+import org.joda.time._
+import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 
-import java.util.UUID
-
-case class JWTHeader(
-  alg: String = "HS256",
-  typ: String = "JWT"
-)
+case class JWTHeader(alg: String = "HS256", typ: String = "JWT")
 
 case class JWTReservedClaims(
   exp: Option[DateTime] = None // Expiry
@@ -32,15 +22,20 @@ case class JWTReservedClaims(
 )
 
 case class JWTDefaultClaims(
-  application_id: Option[String] = None, account_id: Option[String] = None, session_id: Option[String] = None, verify_id: Option[String] = None, context_id: Option[String] = None, isVerified: Option[Boolean] = None, isValidated: Option[Boolean] = None, isLive: Option[Boolean] = None, _any_json: Option[String] = None
+  application_id: Option[String] = None,
+  account_id: Option[String] = None,
+  session_id: Option[String] = None,
+  verify_id: Option[String] = None,
+  context_id: Option[String] = None,
+  isVerified: Option[Boolean] = None,
+  isValidated: Option[Boolean] = None,
+  isLive: Option[Boolean] = None,
+  _any_json: Option[String] = None
 )
 
-case class JWT(
-  header: JWTHeader, reserved: JWTReservedClaims, default: JWTDefaultClaims, payload: Map[String, String]
-)
+case class JWT(header: JWTHeader, reserved: JWTReservedClaims, default: JWTDefaultClaims, payload: Map[String, String])
 
-protected trait JWTSupport
-    extends DefaultJsonProtocol {
+protected trait JWTSupport extends DefaultJsonProtocol {
   val iss: String
   val aud: String
   val prn: String
@@ -49,20 +44,19 @@ protected trait JWTSupport
   val secret: Array[Byte]
   val algorithm: Algorithm
 
+  private val crypto = new CryptoMechanic(algorithm, secret)
+
   implicit object DateTimeFormat extends RootJsonFormat[DateTime] {
+    val formatter: DateTimeFormatter = ISODateTimeFormat.basicDateTime
 
-    //    val formatter = ISODateTimeFormat.basicDateTimeNoMillis
-    val formatter = ISODateTimeFormat.basicDateTime
-
-    def write(obj: DateTime): JsValue = {
+    def write(obj: DateTime): JsValue =
       JsString(formatter.print(obj.withZone(DateTimeZone.UTC)))
-    }
 
     def read(json: JsValue): DateTime = json match {
       case JsString(s) => try {
         formatter.parseDateTime(s).withZone(DateTimeZone.UTC)
       } catch {
-        case t: Throwable => error(s)
+        case _: Throwable => error(s)
       }
       case _ =>
         error(json.toString())
@@ -74,27 +68,31 @@ protected trait JWTSupport
     }
   }
 
-  implicit val json_JWTHeader = jsonFormat2(JWTHeader)
-  implicit val json_JWTReservedClaims = jsonFormat8(JWTReservedClaims)
-  implicit val json_JWTPayload = jsonFormat9(JWTDefaultClaims)
-  implicit val json_JWT = jsonFormat4(JWT)
+  implicit val json_JWTHeader: RootJsonFormat[JWTHeader] =
+    jsonFormat2(JWTHeader)
 
-  private val crypto = new CryptoMechanic(algorithm, secret)
+  implicit val json_JWTReservedClaims: RootJsonFormat[JWTReservedClaims] =
+    jsonFormat8(JWTReservedClaims)
 
-  def getDefaultJWTToken(default: JWTDefaultClaims) = {
-    getJWTToken(getDefaultJWT(default))
-  }
+  implicit val json_JWPayload: RootJsonFormat[JWTDefaultClaims] =
+    jsonFormat9(JWTDefaultClaims)
 
-  def getDefaultJWT(default: JWTDefaultClaims) = {
+  implicit val json_JWT: RootJsonFormat[JWT] =
+    jsonFormat4(JWT)
+
+  def defaultJWTToken(default: JWTDefaultClaims): String =
+    jwtToken(defaultJWT(default))
+
+  def defaultJWT(default: JWTDefaultClaims): JWT = {
     JWT(
       JWTHeader(),
-      getDefaultReservedClaims,
+      defaultReservedClaims,
       default,
       Map()
     )
   }
 
-  private def getDefaultReservedClaims(): JWTReservedClaims = {
+  private def defaultReservedClaims: JWTReservedClaims = {
     JWTReservedClaims(
       exp = Some(now.plusDays(7)),
       nbf = Some(now),
@@ -107,8 +105,7 @@ protected trait JWTSupport
     )
   }
 
-  def getJWTToken(jwt: JWT): String = {
-
+  def jwtToken(jwt: JWT): String = {
     val headerJson = jwt.header.copy(alg = crypto.getAlgorithm.name).toJson.toString
     val headerB64String = Base64.getUrlEncoder.encodeToString(headerJson.getBytes(crypto.getCharset))
 
@@ -126,7 +123,8 @@ protected trait JWTSupport
     prefix + "." + signature
   }
 
-  def validateJWTTokenFuture(jwt: String) = Future.fromTry(validateJWTToken(jwt))
+  def validateJWTTokenFuture(jwt: String): Future[JWT] =
+    Future fromTry validateJWTToken(jwt)
 
   def validateJWTToken(jwt: String): Try[JWT] = {
     Try {
@@ -159,83 +157,75 @@ protected trait JWTSupport
       var jWTReservedClaims = JWTReservedClaims()
       var jWTDefaultClaims = JWTDefaultClaims()
 
-      val payloadFinal = payloadFields.filter(x => {
+      val payloadFinal = payloadFields.filter { x =>
         x._1 match {
-          case s if s == "exp" => {
+          case s if s == "exp" =>
             jWTReservedClaims = jWTReservedClaims.copy(exp = Some(x._2.convertTo[DateTime]))
             false
-          }
-          case s if s == "nbf" => {
+
+          case s if s == "nbf" =>
             jWTReservedClaims = jWTReservedClaims.copy(nbf = Some(x._2.convertTo[DateTime]))
             false
-          }
-          case s if s == "iat" => {
+
+          case s if s == "iat" =>
             jWTReservedClaims = jWTReservedClaims.copy(iat = Some(x._2.convertTo[DateTime]))
             false
-          }
-          case s if s == "iss" => {
+
+          case s if s == "iss" =>
             jWTReservedClaims = jWTReservedClaims.copy(iss = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "aud" => {
+
+          case s if s == "aud" =>
             jWTReservedClaims = jWTReservedClaims.copy(aud = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "prn" => {
+
+          case s if s == "prn" =>
             jWTReservedClaims = jWTReservedClaims.copy(prn = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "jti" => {
+
+          case s if s == "jti" =>
             jWTReservedClaims = jWTReservedClaims.copy(jti = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "typ" => {
+
+          case s if s == "typ" =>
             jWTReservedClaims = jWTReservedClaims.copy(typ = Some(x._2.convertTo[String]))
             false
-          }
-          case _ => true
+
+          case _ =>
+            true
         }
-      }).filter(x => {
+      }.filter { x =>
         x._1 match {
-          case s if s == "application_id" => {
+          case s if s == "application_id" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(application_id = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "account_id" => {
+          case s if s == "account_id" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(account_id = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "session_id" => {
+          case s if s == "session_id" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(session_id = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "verify_id" => {
+          case s if s == "verify_id" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(verify_id = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "context_id" => {
+          case s if s == "context_id" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(context_id = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "_any_json" => {
+          case s if s == "_any_json" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(_any_json = Some(x._2.convertTo[String]))
             false
-          }
-          case s if s == "isVerified" => {
+          case s if s == "isVerified" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(isVerified = Some(x._2.convertTo[Boolean]))
             false
-          }
-          case s if s == "isValidated" => {
+          case s if s == "isValidated" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(isValidated = Some(x._2.convertTo[Boolean]))
             false
-          }
-          case s if s == "isLive" => {
+          case s if s == "isLive" =>
             jWTDefaultClaims = jWTDefaultClaims.copy(isLive = Some(x._2.convertTo[Boolean]))
             false
-          }
           case _ => true
         }
-      }).map(x => (x._1, x._2.convertTo[String]))
+      }.map(x => (x._1, x._2.convertTo[String]))
 
       JWT(jwtHeader, jWTReservedClaims, jWTDefaultClaims, payloadFinal)
     }
@@ -243,11 +233,11 @@ protected trait JWTSupport
 }
 
 trait JWTWithKey extends JWTSupport with KeySupport {
-  val secret = getDefaultSecret
+  val secret: Array[Byte] = defaultSecret
 }
 
 trait JWTMechanic {
-  val jwtMechanic = new JWTWithKey {
+  val jwtMechanic: JWTWithKey = new JWTWithKey {
     val iss: String = "JWT Test"
     val aud: String = iss
     val prn: String = iss
@@ -261,7 +251,7 @@ trait JWTMechanic {
 
   }
 
-  def getJWT(application_id: String, account_id: String, session_id: Option[String] = None, verify_id: Option[String] = None, context_id: Option[String] = None) = Some(jwtMechanic.getDefaultJWT(JWTDefaultClaims(
+  def getJWT(application_id: String, account_id: String, session_id: Option[String] = None, verify_id: Option[String] = None, context_id: Option[String] = None) = Some(jwtMechanic.defaultJWT(JWTDefaultClaims(
     application_id = Some(application_id),
     account_id = Some(account_id),
     session_id = session_id,

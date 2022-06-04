@@ -3,101 +3,103 @@ package parallelai.common.secure
 import java.security.{ AlgorithmParameters, Key, MessageDigest }
 import java.util.Base64
 import javax.crypto._
-import javax.crypto.spec.{ DESKeySpec, PBEKeySpec, PBEParameterSpec, SecretKeySpec }
-
-import com.sun.crypto.provider.AESKeyGenerator
+import javax.crypto.spec.{ DESKeySpec, SecretKeySpec }
+import scala.language.implicitConversions
 
 sealed trait Algorithm {
   def name: String
+
   def value: String
-  //  def keySpec(secret: Array[Byte]): SecretKeySpec = new SecretKeySpec(secret, value)
-  override def toString = name
+
+  override def toString: String = name
 }
 
 case object HS256 extends Algorithm {
-  def name = "HS256"
-  def value = "HmacSHA256"
+  val name = "HS256"
+  val value = "HmacSHA256"
 }
+
 case object HS384 extends Algorithm {
-  def name = "HS384"
-  def value = "HmacSHA384"
+  val name = "HS384"
+  val value = "HmacSHA384"
 }
+
 case object HS512 extends Algorithm {
-  def name = "HS512"
-  def value = "HmacSHA512"
+  val name = "HS512"
+  val value = "HmacSHA512"
 }
+
 case object NONE extends Algorithm {
-  def name = "NONE"
-  def value = "NONE"
+  val name = "NONE"
+  val value = "NONE"
 }
+
 case object AES extends Algorithm {
-  def name = "AES"
-  def value = "AES/CBC/PKCS5Padding"
+  val name = "AES"
+  val value = "AES/CBC/PKCS5Padding"
 }
+
 case object DES extends Algorithm {
-  def name = "DES"
-  def value = "DES/CBC/PKCS5Padding"
+  val name = "DES"
+  val value = "DES/CBC/PKCS5Padding"
 }
 
 case class CryptoResult[T](payload: T, params: Option[Array[Byte]] = None)
 
 object Algorithm {
-  def apply(name: String): Algorithm = {
-    name match {
-      case s if s == HS256.name => HS256
-      case s if s == HS384.name => HS384
-      case s if s == HS512.name => HS512
-      case s if s == AES.name => AES
-      case s if s == DES.name => DES
-      case s if s == NONE.name => NONE
-      case _ => throw new Exception("Unknown Algorithm")
-    }
+  def apply(name: String): Algorithm = name match {
+    case s if s == HS256.name => HS256
+    case s if s == HS384.name => HS384
+    case s if s == HS512.name => HS512
+    case s if s == AES.name => AES
+    case s if s == DES.name => DES
+    case s if s == NONE.name => NONE
+    case _ => throw new Exception("Unknown Algorithm")
   }
 }
 
 class CryptoMechanic(algorithm: Algorithm = AES, secret: Array[Byte]) extends ConversionHelper {
-  //  private var algorithm: Algorithm = null
-  //  private var secret: Array[Byte] = null
   private var charset: String = "utf-8"
 
-  new SecretKeySpec(secret, 0, 16, "AES")
+  def setCharset(set: String): Unit = charset = set
 
-  //  def setAlgorithm(alg: Algorithm) = algorithm = alg
-  //  def setSecret(sec: Array[Byte]) = secret = sec
-  def setCharset(set: String) = charset = set
+  def getAlgorithm: Algorithm = algorithm
 
-  def getAlgorithm = algorithm
-  def getCharset = charset
+  def getCharset: String = charset
 
   def getSignature(payload: Array[Byte]): Array[Byte] = {
     require(algorithm != null, "Algorithm not set")
     require(secret != null, "Secret not set")
 
     algorithm match {
-      case HS256 | HS384 | HS512 => {
+      case HS256 | HS384 | HS512 =>
         val mac: Mac = Mac.getInstance(algorithm.value)
         mac.init(new SecretKeySpec(secret, algorithm.value))
         mac.doFinal(payload)
-      }
-      case AES | DES => encrypt(payload, None).payload
-      case NONE => "".getBytes(charset)
+
+      case AES | DES =>
+        encrypt(payload, None).payload
+
+      case NONE =>
+        "".getBytes(charset)
     }
   }
 
-  def getB64Signature(payload: String): String = {
+  def getB64Signature(payload: String): String =
     Base64.getUrlEncoder.encodeToString(getSignature(payload))
-  }
 
-  private def getSecretKey(): Key = {
+  private def secretKey: Key = {
     require(secret != null)
     require(algorithm != null)
 
     algorithm match {
-      case AES => new SecretKeySpec(secret, 0, 16, algorithm.name)
-      case DES => {
+      case AES =>
+        new SecretKeySpec(secret, 0, 16, algorithm.name)
+
+      case DES =>
         val keySpec = new DESKeySpec(secret)
         SecretKeyFactory.getInstance(algorithm.name).generateSecret(keySpec)
-      }
+
       case _ => new Key {
         override def getEncoded: Array[Byte] = secret
 
@@ -112,19 +114,18 @@ class CryptoMechanic(algorithm: Algorithm = AES, secret: Array[Byte]) extends Co
     require(algorithm match {
       case AES | DES => true
       case _ => false
-    }, s"Cannot ${dir} with Algorithm ${algorithm}")
+    }, s"Cannot $dir with Algorithm $algorithm")
 
     val cipher = Cipher.getInstance(algorithm.value)
 
-    val secretKeySpec = getSecretKey()
-
     cipherParams match {
-      case None => cipher.init(dir.mode, secretKeySpec)
-      case Some(p) => {
+      case None =>
+        cipher.init(dir.mode, secretKey)
+
+      case Some(p) =>
         val algoParms = AlgorithmParameters.getInstance(algorithm.name)
         algoParms.init(p)
-        cipher.init(dir.mode, secretKeySpec, algoParms)
-      }
+        cipher.init(dir.mode, secretKey, algoParms)
     }
 
     val payload = cipher.doFinal(msg)
@@ -133,19 +134,35 @@ class CryptoMechanic(algorithm: Algorithm = AES, secret: Array[Byte]) extends Co
     CryptoResult[O](payload, Some(params))
   }
 
-  def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] = perform(msg, ENCRYPT, params)
-  def decrypt[I, O](code: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] = perform(code, DECRYPT, params)
+  def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
+    perform(msg, ENCRYPT, params)
+
+  def decrypt[I, O](code: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
+    perform(code, DECRYPT, params)
 }
 
 trait ConversionHelper {
-  def toB64[I, O](bytes: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = Base64.getEncoder.encode(bytes)
-  def fromB64[I, O](b64: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = Base64.getDecoder.decode(b64)
+  implicit def string2Bytes(s: String): Array[Byte] = s.getBytes()
 
-  def toB64String[I](bytes: I)(implicit i: I => Array[Byte]): String = Base64.getEncoder.encodeToString(bytes)
-  def fromB64String[O](b64: String)(implicit o: Array[Byte] => O): O = Base64.getDecoder.decode(b64)
+  implicit def bytes2String(b: Array[Byte]): String = new String(b)
 
-  def toSHA256[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = MessageDigest.getInstance("SHA-256").digest(s)
-  def toSHA1[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O = MessageDigest.getInstance("SHA-1").digest(s)
+  def toB64[I, O](bytes: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
+    Base64.getEncoder encode bytes
+
+  def fromB64[I, O](b64: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
+    Base64.getDecoder decode b64
+
+  def toB64String[I](bytes: I)(implicit i: I => Array[Byte]): String =
+    Base64.getEncoder encodeToString bytes
+
+  def fromB64String[O](b64: String)(implicit o: Array[Byte] => O): O =
+    Base64.getDecoder decode b64
+
+  def toSHA256[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
+    MessageDigest getInstance "SHA-256" digest s
+
+  def toSHA1[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
+    MessageDigest getInstance "SHA-1" digest s
 
   def getFirstNBytes(a: Array[Byte], n: Int = 16): Array[Byte] = {
     val o = new Array[Byte](n)
@@ -153,11 +170,10 @@ trait ConversionHelper {
     o
   }
 
-  implicit def stringToBytes(s: String): Array[Byte] = s.getBytes()
-  implicit def bytesToString(b: Array[Byte]): String = new String(b)
-
-  /*
+  /**
    * Converts a byte to hex digit and writes to the supplied buffer
+   * @param b Byte
+   * @param buf StringBuffer
    */
   def byte2hex(b: Byte, buf: StringBuffer): Unit = {
     val hexChars = Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
@@ -167,23 +183,25 @@ trait ConversionHelper {
     buf.append(hexChars(low))
   }
 
-  /*
+  /**
    * Converts a byte array to hex string
+   * @param block Array[Byte]
+   * @return String
    */
-  def toHexString(block: Array[Byte]) = {
+  def toHexString(block: Array[Byte]): String = {
     val buf = new StringBuffer
     val len = block.length
     var i = 0
-    while ({
-      i < len
-    }) {
+
+    while (i < len) {
       byte2hex(block(i), buf)
+
       if (i < len - 1) buf.append(":")
 
-      {
-        i += 1; i - 1
-      }
+      i += 1
+      i - 1
     }
+
     buf.toString
   }
 }
