@@ -1,6 +1,5 @@
 package parallelai.common.secure.model
 
-import scala.collection.mutable
 import scala.util.Try
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
@@ -14,7 +13,7 @@ object EncryptedBytes {
   implicit val rootJsonFormat: RootJsonFormat[EncryptedBytes] = jsonFormat2(EncryptedBytes.apply)
 
   def apply[T: ArrayOfBytes](value: T)(implicit crypto: CryptoMechanic) = Try {
-    val cryptoResult: CryptoResult[mutable.ArrayOps.ofByte] = crypto encrypt ArrayOfBytes[T].apply(value)
+    val cryptoResult: CryptoResult[Array[Byte]] = crypto.encrypt(ArrayOfBytes[T].apply(value))
     new EncryptedBytes(cryptoResult.payload.repr, cryptoResult.params)
   }
 

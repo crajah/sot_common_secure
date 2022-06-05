@@ -5,7 +5,9 @@ trait ArrayOfBytes[T] {
 }
 
 object ArrayOfBytes {
-  implicit val stringAsArrayOfBytes: ArrayOfBytes[String] = _.getBytes
+  implicit val stringAsArrayOfBytes: ArrayOfBytes[String] = new ArrayOfBytes[String] {
+    def apply(s: String): Array[Byte] = s.getBytes
+  }
 
   def apply[T: ArrayOfBytes]: ArrayOfBytes[T] = implicitly[ArrayOfBytes[T]]
 }
