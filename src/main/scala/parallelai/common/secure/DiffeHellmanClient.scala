@@ -16,21 +16,17 @@ trait DiffeHellmanClient extends Logging {
   private val clientKeyAgree = KeyAgreement.getInstance("DH")
   clientKeyAgree.init(clientKpair.getPrivate)
 
-  private var clientSharedSecret: Option[Array[Byte]] = None
-
-  def clientPublicKey: Array[Byte] =
+  lazy val clientPublicKey: Array[Byte] =
     clientKpair.getPublic.getEncoded
 
-  def createClientSharedSecret(serverPubKeyEnc: Array[Byte]): Unit = {
+  def clientSharedSecret(serverPubKeyEnc: Array[Byte]): Array[Byte] = {
     val clientKeyFac = KeyFactory.getInstance("DH")
     val x509KeySpec = new X509EncodedKeySpec(serverPubKeyEnc)
-    val bobPubKey = clientKeyFac.generatePublic(x509KeySpec)
+    val publicKey = clientKeyFac.generatePublic(x509KeySpec)
 
     info("CLIENT: Execute PHASE1 ...")
-    clientKeyAgree.doPhase(bobPubKey, true)
+    clientKeyAgree.doPhase(publicKey, true)
 
-    clientSharedSecret = Some(clientKeyAgree.generateSecret)
+    clientKeyAgree.generateSecret
   }
-
-  def getClientSharedSecret: Option[Array[Byte]] = clientSharedSecret
 }

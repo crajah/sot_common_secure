@@ -1,6 +1,5 @@
 package parallelai.common.secure.model
 
-import scala.util.Success
 import spray.json._
 import org.scalatest.{ MustMatchers, WordSpec }
 import parallelai.common.secure.CryptoMechanic
@@ -12,8 +11,8 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
     "encrypt and decrypt given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val Success(encryptedMessage) = EncryptedBytes(message)
-      val Success(decryptedMessage) = encryptedMessage.decrypt
+      val encryptedMessage = EncryptedBytes(message)
+      val decryptedMessage = encryptedMessage.decrypt
 
       new String(decryptedMessage) mustEqual message
     }
@@ -21,10 +20,10 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
     "encrypt and convert to JSON which is decrypted given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val Success(encryptedMessage) = EncryptedBytes(message)
+      val encryptedMessage = EncryptedBytes(message)
       val encryptedJson: JsValue = encryptedMessage.toJson
 
-      val Success(decryptedMessage) = encryptedJson.convertTo[EncryptedBytes].decrypt
+      val decryptedMessage = encryptedJson.convertTo[EncryptedBytes].decrypt
 
       new String(decryptedMessage) mustEqual message
     }
@@ -32,12 +31,12 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
     "encrypt and convert to String which is decrypted given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val Success(encryptedMessage) = EncryptedBytes(message)
-      val encryptedJson: JsValue = encryptedMessage.toJson
-      val encryptedString = encryptedJson.compactPrint
+      val encryptedMessage = EncryptedBytes(message)
+      val encryptedJson: JsValue = JsObject("productToken" -> encryptedMessage.toJson)
+      val encryptedString = encryptedJson.prettyPrint
 
-      val encryptedBytes = encryptedString.parseJson.convertTo[EncryptedBytes]
-      val Success(decryptedMessage) = encryptedBytes.decrypt
+      val encryptedBytes = encryptedString.parseJson.asJsObject().fields("productToken").convertTo[EncryptedBytes]
+      val decryptedMessage = encryptedBytes.decrypt
 
       new String(decryptedMessage) mustEqual message
     }
@@ -45,13 +44,12 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
     "encrypt and convert to String which is decrypted back to original type given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val Success(encryptedMessage) = EncryptedBytes(message)
+      val encryptedMessage = EncryptedBytes(message)
       val encryptedJson: JsValue = encryptedMessage.toJson
       val encryptedString = encryptedJson.compactPrint
-      println(encryptedString)
 
       val encryptedBytes = encryptedString.parseJson.convertTo[EncryptedBytes]
-      val Success(decryptedMessage: String) = encryptedBytes.decryptT
+      val decryptedMessage = encryptedBytes.decryptT
 
       decryptedMessage mustEqual message
     }
