@@ -1,9 +1,9 @@
 package parallelai.common.secure.model
 
-import org.scalatest.TryValues._
+import scala.util.Success
+import spray.json._
 import org.scalatest.{ MustMatchers, WordSpec }
 import parallelai.common.secure.CryptoMechanic
-import spray.json._
 
 class EncryptedBytesSpec extends WordSpec with MustMatchers {
   implicit val crypto: CryptoMechanic = new CryptoMechanic(secret = "victorias secret".getBytes)
@@ -12,32 +12,48 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
     "encrypt and decrypt given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val encryptedMessage = EncryptedBytes(message).success.value
-      new String(encryptedMessage.decrypt.success.value) mustEqual message
+      val Success(encryptedMessage) = EncryptedBytes(message)
+      val Success(decryptedMessage) = encryptedMessage.decrypt
+
+      new String(decryptedMessage) mustEqual message
     }
 
     "encrypt and convert to JSON which is decrypted given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val encryptedMessage: EncryptedBytes = EncryptedBytes(message).success.value
+      val Success(encryptedMessage) = EncryptedBytes(message)
       val encryptedJson: JsValue = encryptedMessage.toJson
 
-      val encryptedBytes = encryptedJson.convertTo[EncryptedBytes]
-      new String(encryptedBytes.decrypt.success.value) mustEqual message
+      val Success(decryptedMessage) = encryptedJson.convertTo[EncryptedBytes].decrypt
+
+      new String(decryptedMessage) mustEqual message
     }
 
     "encrypt and convert to String which is decrypted given some Crypto mechanism" in {
       val message = "Hello world"
 
-      val encryptedMessage: EncryptedBytes = EncryptedBytes(message).success.value
+      val Success(encryptedMessage) = EncryptedBytes(message)
+      val encryptedJson: JsValue = encryptedMessage.toJson
+      val encryptedString = encryptedJson.compactPrint
+
+      val encryptedBytes = encryptedString.parseJson.convertTo[EncryptedBytes]
+      val Success(decryptedMessage) = encryptedBytes.decrypt
+
+      new String(decryptedMessage) mustEqual message
+    }
+
+    "encrypt and convert to String which is decrypted back to original type given some Crypto mechanism" in {
+      val message = "Hello world"
+
+      val Success(encryptedMessage) = EncryptedBytes(message)
       val encryptedJson: JsValue = encryptedMessage.toJson
       val encryptedString = encryptedJson.compactPrint
       println(encryptedString)
 
-      val fromEmailEncryptedJson: JsValue = encryptedString.parseJson
-      val encryptedBytes = fromEmailEncryptedJson.convertTo[EncryptedBytes]
+      val encryptedBytes = encryptedString.parseJson.convertTo[EncryptedBytes]
+      val Success(decryptedMessage: String) = encryptedBytes.decryptT
 
-      new String(encryptedBytes.decrypt.success.value) mustEqual message
+      decryptedMessage mustEqual message
     }
   }
 }
