@@ -20,7 +20,7 @@ lazy val sot_common_secure = (project in file("."))
     name := "sot_common_secure",
     inThisBuild(List(
       organization := "parallelai",
-      scalaVersion := scala_2_11
+      scalaVersion := scala_2_12
     )),
     crossScalaVersions := Seq(scala_2_11, scala_2_12),
     assemblySettings,
@@ -43,6 +43,7 @@ lazy val sot_common_secure = (project in file("."))
       sprayJson,
       jodaTime,
       grizzledLogging,
-      logback
+      logback,
+      upickle
     )
   )
