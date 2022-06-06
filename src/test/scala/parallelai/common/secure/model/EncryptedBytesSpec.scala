@@ -1,5 +1,6 @@
 package parallelai.common.secure.model
 
+import io.circe.syntax._
 import spray.json._
 import org.scalatest.{ MustMatchers, WordSpec }
 import parallelai.common.secure.CryptoMechanic
@@ -52,6 +53,20 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
       val decryptedMessage = encryptedBytes.decryptT
 
       decryptedMessage mustEqual message
+    }
+
+    "converted to Spray JSON" in {
+      val message = "Hello world"
+      val encryptedMessage = EncryptedBytes(message)
+
+      encryptedMessage.toJson.convertTo[EncryptedBytes].decryptT[String] mustEqual message
+    }
+
+    "converted to Circe JSON" in {
+      val message = "Hello world"
+      val encryptedMessage = EncryptedBytes(message)
+
+      encryptedMessage.asJson.as[EncryptedBytes].right.get.decryptT[String] mustEqual message
     }
   }
 }

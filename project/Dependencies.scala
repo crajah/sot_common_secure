@@ -8,6 +8,12 @@ object Dependencies {
 
   val sprayJson = "io.spray" %%  "spray-json" % "1.3.4"
 
+  val circe: Seq[ModuleID] = Seq(
+    "io.circe" %% "circe-core",
+    "io.circe" %% "circe-generic",
+    "io.circe" %% "circe-parser"
+  ).map(_ % "0.9.1")
+
   val jodaTime = "joda-time" % "joda-time" % "2.9.9"
 
   val upickle = "com.lihaoyi" %% "upickle" % "0.5.1"

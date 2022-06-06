@@ -3,6 +3,7 @@ package parallelai.common.secure.model
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 import parallelai.common.secure.{ CryptoMechanic, CryptoResult }
+import io.circe.{ Decoder, Encoder }
 
 case class EncryptedBytes private (private val value: Array[Byte], private val params: Option[Array[Byte]]) {
   def decrypt(implicit crypto: CryptoMechanic): Array[Byte] = EncryptedBytes decrypt this
@@ -12,6 +13,12 @@ case class EncryptedBytes private (private val value: Array[Byte], private val p
 
 object EncryptedBytes {
   implicit val rootJsonFormat: RootJsonFormat[EncryptedBytes] = jsonFormat2(EncryptedBytes.apply)
+
+  implicit val encoder: Encoder[EncryptedBytes] =
+    Encoder.forProduct2("value", "params")(e => (e.value, e.params))
+
+  implicit val decoder: Decoder[EncryptedBytes] =
+    Decoder.forProduct2("value", "params")(EncryptedBytes.apply)
 
   def apply[T: ToBytes](value: T)(implicit crypto: CryptoMechanic): EncryptedBytes = {
     val CryptoResult(cryptoPayload, cryptoParams) = crypto.encrypt(ToBytes[T].apply(value))

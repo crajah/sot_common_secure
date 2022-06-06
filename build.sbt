@@ -45,5 +45,5 @@ lazy val sot_common_secure = (project in file("."))
       grizzledLogging,
       logback,
       upickle
-    )
+    ) ++ circe
   )
