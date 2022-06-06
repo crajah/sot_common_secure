@@ -1,4 +1,4 @@
-package parallelai.common.secure.model
+package parallelai.common.secure
 
 trait ToBytes[T] {
   def apply(t: T): Array[Byte]

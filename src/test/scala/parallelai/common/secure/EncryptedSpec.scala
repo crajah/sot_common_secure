@@ -1,9 +1,8 @@
-package parallelai.common.secure.model
+package parallelai.common.secure
 
 import io.circe.syntax._
 import spray.json._
-import org.scalatest.{MustMatchers, WordSpec}
-import parallelai.common.secure.CryptoMechanic
+import org.scalatest.{ MustMatchers, WordSpec }
 
 class EncryptedSpec extends WordSpec with MustMatchers {
   implicit val crypto: CryptoMechanic = new CryptoMechanic(secret = "victorias secret".getBytes)

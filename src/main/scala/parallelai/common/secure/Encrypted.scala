@@ -1,9 +1,8 @@
-package parallelai.common.secure.model
+package parallelai.common.secure
 
 import io.circe.{ Decoder, Encoder }
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
-import parallelai.common.secure.{ CryptoMechanic, CryptoResult }
 
 case class Encrypted private (private val value: Array[Byte], private val params: Option[Array[Byte]]) {
   def decrypt(implicit crypto: CryptoMechanic): Array[Byte] = Encrypted decrypt this
