@@ -9,5 +9,9 @@ object ToBytes {
     def apply(s: String): Array[Byte] = s.getBytes
   }
 
+  implicit val bytesToBytes: ToBytes[Array[Byte]] = new ToBytes[Array[Byte]] {
+    def apply(a: Array[Byte]): Array[Byte] = a
+  }
+
   def apply[T: ToBytes]: ToBytes[T] = implicitly[ToBytes[T]]
 }

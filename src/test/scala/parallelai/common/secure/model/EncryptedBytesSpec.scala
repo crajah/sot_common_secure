@@ -50,7 +50,7 @@ class EncryptedBytesSpec extends WordSpec with MustMatchers {
       val encryptedString = encryptedJson.compactPrint
 
       val encryptedBytes = encryptedString.parseJson.convertTo[EncryptedBytes]
-      val decryptedMessage = encryptedBytes.decryptT
+      val decryptedMessage = encryptedBytes.decryptT[String]
 
       decryptedMessage mustEqual message
     }
