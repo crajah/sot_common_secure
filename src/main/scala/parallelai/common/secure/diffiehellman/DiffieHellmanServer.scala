@@ -23,12 +23,12 @@ trait DiffieHellmanServer extends Logging {
 
     // Server creates and initializes his DH KeyAgreement object
     info("Server: Initialization - create and initialize DH KeyAgreement object ...")
-    val serverKeyAgree = KeyAgreement.getInstance("DH")
-    serverKeyAgree.init(serverKeyPair.getPrivate)
+    val serverKeyAgreement = KeyAgreement.getInstance("DH")
+    serverKeyAgreement.init(serverKeyPair.getPrivate)
 
     info("Server: Execute PHASE1 ...")
-    serverKeyAgree.doPhase(publicKey, true)
+    serverKeyAgreement.doPhase(publicKey, true)
 
-    ServerKey(serverKeyPair.getPublic.getEncoded, serverKeyAgree.generateSecret())
+    ServerKey(serverKeyPair.getPublic.getEncoded, serverKeyAgreement.generateSecret())
   }
 }
