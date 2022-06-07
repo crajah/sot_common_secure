@@ -1,4 +1,4 @@
-package parallelai.common.secure
+package parallelai.common.secure.diffiehellman
 
 import java.security.spec.X509EncodedKeySpec
 import java.security.{ KeyFactory, KeyPairGenerator }
@@ -6,17 +6,15 @@ import javax.crypto.KeyAgreement
 import javax.crypto.interfaces.DHPublicKey
 import grizzled.slf4j.Logging
 
-trait DiffeHellmanServer extends Logging {
-  private var serverSharedSecret: Option[Array[Byte]] = None
-
-  def getServerPublicKey(clientPubKeyEnc: Array[Byte]): Array[Byte] = {
+trait DiffieHellmanServer extends Logging {
+  def serverPublicKey(clientPublicKey: Array[Byte]): (Array[Byte], Array[Byte]) = {
     val serverKeyFac = KeyFactory.getInstance("DH")
 
-    val x509KeySpec = new X509EncodedKeySpec(clientPubKeyEnc)
+    val x509KeySpec = new X509EncodedKeySpec(clientPublicKey)
 
-    val clientPubKey = serverKeyFac.generatePublic(x509KeySpec)
+    val publicKey = serverKeyFac.generatePublic(x509KeySpec)
 
-    val dhParamFromClientPubKey = clientPubKey.asInstanceOf[DHPublicKey].getParams
+    val dhParamFromClientPubKey = publicKey.asInstanceOf[DHPublicKey].getParams
 
     info("SERVER: Generate DH keypair ...")
     val serverKpairGen = KeyPairGenerator.getInstance("DH")
@@ -28,15 +26,13 @@ trait DiffeHellmanServer extends Logging {
     val serverKeyAgree = KeyAgreement.getInstance("DH")
     serverKeyAgree.init(serverKpair.getPrivate)
 
-    val serverPubKeyEnc = serverKpair.getPublic.getEncoded
+    val serverPublicKey = serverKpair.getPublic.getEncoded
 
     info("SERVER: Execute PHASE1 ...")
-    serverKeyAgree.doPhase(clientPubKey, true)
+    serverKeyAgree.doPhase(publicKey, true)
 
-    serverSharedSecret = Some(serverKeyAgree.generateSecret())
+    val sharedSecret = serverKeyAgree.generateSecret()
 
-    serverPubKeyEnc
+    (serverPublicKey, sharedSecret)
   }
-
-  def getServerSharedSecret: Option[Array[Byte]] = serverSharedSecret
 }
