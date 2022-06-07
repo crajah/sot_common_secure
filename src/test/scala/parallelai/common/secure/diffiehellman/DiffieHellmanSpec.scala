@@ -6,20 +6,11 @@ class DiffieHellmanSpec extends WordSpec with MustMatchers with DiffieHellmanCli
   "Diffie-Hellman Client and Server shared secret" should {
     "be the same" in {
       // Begin Key Exchange
-      val clientKey = clientPublicKey
-      val (serverKey, shared) = serverPublicKey(clientKey)
-      val clientSecret = clientSharedSecret(serverKey)
+      val sk: ServerKey = serverKey(clientPublicKey)
 
-      println(clientKey)
-      println(serverKey)
-      println(shared)
-      println(clientSecret)
+      val css: ClientSharedSecret = clientSharedSecret(sk)
 
-      // TODO
-      /*val cs = getClientSharedSecret
-      val ss = getClientSharedSecret
-
-      cs shouldEqual ss*/
+      css.value mustEqual sk.sharedSecret
     }
   }
 }

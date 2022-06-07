@@ -6,27 +6,29 @@ import javax.crypto.KeyAgreement
 import grizzled.slf4j.Logging
 
 trait DiffieHellmanClient extends Logging {
-  info("CLIENT: Generate DH keypair ...")
-  private val clientKpairGen = KeyPairGenerator.getInstance("DH")
-  clientKpairGen.initialize(2048)
+  info("Client: Generate DH keypair ...")
+  private val clientKeyPairGenerator = KeyPairGenerator.getInstance("DH")
+  clientKeyPairGenerator.initialize(2048)
 
-  private val clientKpair = clientKpairGen.generateKeyPair
+  private val clientKeyPair = clientKeyPairGenerator.generateKeyPair
 
-  info("CLIENT: Creates and initializes DH KeyAgreement ...")
-  private val clientKeyAgree = KeyAgreement.getInstance("DH")
-  clientKeyAgree.init(clientKpair.getPrivate)
+  // Client creates and initializes her DH KeyAgreement object
+  info("Client: Initialization ...")
+  private val clientKeyAgreement = KeyAgreement.getInstance("DH")
+  clientKeyAgreement.init(clientKeyPair.getPrivate)
 
-  lazy val clientPublicKey: Array[Byte] =
-    clientKpair.getPublic.getEncoded
+  lazy val clientPublicKey: ClientPublicKey =
+    new ClientPublicKey(clientKeyPair.getPublic.getEncoded)
 
-  def clientSharedSecret(serverPublicKey: Array[Byte]): Array[Byte] = {
-    val clientKeyFac = KeyFactory.getInstance("DH")
-    val x509KeySpec = new X509EncodedKeySpec(serverPublicKey)
-    val publicKey = clientKeyFac.generatePublic(x509KeySpec)
+  //val clientSharedSecret:
+  def clientSharedSecret(serverKey: ServerKey): ClientSharedSecret = {
+    val clientKeyFactory = KeyFactory.getInstance("DH")
+    val x509KeySpec = new X509EncodedKeySpec(serverKey.publicKey)
 
-    info("CLIENT: Execute PHASE1 ...")
-    clientKeyAgree.doPhase(publicKey, true)
+    info("Client: Execute PHASE1 ...")
+    clientKeyAgreement.doPhase(clientKeyFactory.generatePublic(x509KeySpec), true)
 
-    clientKeyAgree.generateSecret
+    // Client shared secret
+    new ClientSharedSecret(clientKeyAgreement.generateSecret)
   }
 }

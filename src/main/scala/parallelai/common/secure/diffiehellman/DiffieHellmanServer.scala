@@ -4,35 +4,31 @@ import java.security.spec.X509EncodedKeySpec
 import java.security.{ KeyFactory, KeyPairGenerator }
 import javax.crypto.KeyAgreement
 import javax.crypto.interfaces.DHPublicKey
+import javax.crypto.spec.DHParameterSpec
 import grizzled.slf4j.Logging
 
 trait DiffieHellmanServer extends Logging {
-  def serverPublicKey(clientPublicKey: Array[Byte]): (Array[Byte], Array[Byte]) = {
-    val serverKeyFac = KeyFactory.getInstance("DH")
+  def serverKey(clientPublicKey: ClientPublicKey): ServerKey = {
+    val serverKeyFactory = KeyFactory.getInstance("DH")
+    val x509KeySpec = new X509EncodedKeySpec(clientPublicKey.value)
 
-    val x509KeySpec = new X509EncodedKeySpec(clientPublicKey)
+    val publicKey = serverKeyFactory.generatePublic(x509KeySpec)
 
-    val publicKey = serverKeyFac.generatePublic(x509KeySpec)
+    val dHParameterSpec: DHParameterSpec = publicKey.asInstanceOf[DHPublicKey].getParams
 
-    val dhParamFromClientPubKey = publicKey.asInstanceOf[DHPublicKey].getParams
+    info("Server: Generate DH keypair ...")
+    val serverKeyPairGenerator = KeyPairGenerator.getInstance("DH")
+    serverKeyPairGenerator.initialize(dHParameterSpec)
+    val serverKeyPair = serverKeyPairGenerator.generateKeyPair
 
-    info("SERVER: Generate DH keypair ...")
-    val serverKpairGen = KeyPairGenerator.getInstance("DH")
-    serverKpairGen.initialize(dhParamFromClientPubKey)
-
-    val serverKpair = serverKpairGen.generateKeyPair
-
-    info("SERVER: Creates and initializes his DH KeyAgreement ...")
+    // Server creates and initializes his DH KeyAgreement object
+    info("Server: Initialization - create and initialize DH KeyAgreement object ...")
     val serverKeyAgree = KeyAgreement.getInstance("DH")
-    serverKeyAgree.init(serverKpair.getPrivate)
+    serverKeyAgree.init(serverKeyPair.getPrivate)
 
-    val serverPublicKey = serverKpair.getPublic.getEncoded
-
-    info("SERVER: Execute PHASE1 ...")
+    info("Server: Execute PHASE1 ...")
     serverKeyAgree.doPhase(publicKey, true)
 
-    val sharedSecret = serverKeyAgree.generateSecret()
-
-    (serverPublicKey, sharedSecret)
+    ServerKey(serverKeyPair.getPublic.getEncoded, serverKeyAgree.generateSecret())
   }
 }
