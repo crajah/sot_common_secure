@@ -6,7 +6,17 @@ import javax.crypto.KeyAgreement
 import grizzled.slf4j.Logging
 
 object DiffieHellmanClient extends Logging {
-  def create(serverPublicKey: ServerPublicKey): ClientSharedSecret = {
+  def createClientPublicKey: ClientPublicKey = {
+    info("DH Client: Generate DH keypair ...")
+    val clientKeyPairGenerator = KeyPairGenerator getInstance "DH"
+    clientKeyPairGenerator initialize 2048
+
+    val clientKeyPair = clientKeyPairGenerator.generateKeyPair
+
+    ClientPublicKey(clientKeyPair.getPublic.getEncoded, clientKeyPair)
+  }
+
+  def createClientSharedSecret(serverPublicKey: ServerPublicKey): ClientSharedSecret = {
     val clientKeyFactory = KeyFactory getInstance "DH"
     val x509KeySpec = new X509EncodedKeySpec(serverPublicKey.value)
 
