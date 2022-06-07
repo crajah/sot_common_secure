@@ -7,8 +7,8 @@ import javax.crypto.interfaces.DHPublicKey
 import javax.crypto.spec.DHParameterSpec
 import grizzled.slf4j.Logging
 
-trait DiffieHellmanServer extends Logging {
-  def serverKey(clientPublicKey: ClientPublicKey): ServerKey = {
+object DiffieHellmanServer extends Logging {
+  def create(clientPublicKey: ClientPublicKey): (ServerPublicKey, ServerSharedSecret) = {
     val serverKeyFactory = KeyFactory.getInstance("DH")
     val x509KeySpec = new X509EncodedKeySpec(clientPublicKey.value)
 
@@ -21,7 +21,6 @@ trait DiffieHellmanServer extends Logging {
     serverKeyPairGenerator.initialize(dHParameterSpec)
     val serverKeyPair = serverKeyPairGenerator.generateKeyPair
 
-    // Server creates and initializes his DH KeyAgreement object
     info("Server: Initialization - create and initialize DH KeyAgreement object ...")
     val serverKeyAgreement = KeyAgreement.getInstance("DH")
     serverKeyAgreement.init(serverKeyPair.getPrivate)
@@ -29,6 +28,6 @@ trait DiffieHellmanServer extends Logging {
     info("Server: Execute PHASE1 ...")
     serverKeyAgreement.doPhase(publicKey, true)
 
-    ServerKey(serverKeyPair.getPublic.getEncoded, serverKeyAgreement.generateSecret())
+    (new ServerPublicKey(serverKeyPair.getPublic.getEncoded), new ServerSharedSecret(serverKeyAgreement.generateSecret()))
   }
 }

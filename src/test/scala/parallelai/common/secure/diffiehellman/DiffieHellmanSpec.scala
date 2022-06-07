@@ -2,15 +2,14 @@ package parallelai.common.secure.diffiehellman
 
 import org.scalatest._
 
-class DiffieHellmanSpec extends WordSpec with MustMatchers with DiffieHellmanClient with DiffieHellmanServer {
+class DiffieHellmanSpec extends WordSpec with MustMatchers {
   "Diffie-Hellman Client and Server shared secret" should {
     "be the same" in {
-      // Begin Key Exchange
-      val sk: ServerKey = serverKey(clientPublicKey)
+      val (serverPublicKey, serverSharedSecret) = DiffieHellmanServer.create(DiffieHellmanClient.clientPublicKey)
 
-      val css: ClientSharedSecret = clientSharedSecret(sk)
+      val clientSharedSecret: ClientSharedSecret = DiffieHellmanClient.create(serverPublicKey)
 
-      css.value mustEqual sk.sharedSecret
+      clientSharedSecret.value mustEqual serverSharedSecret.value
     }
   }
 }
