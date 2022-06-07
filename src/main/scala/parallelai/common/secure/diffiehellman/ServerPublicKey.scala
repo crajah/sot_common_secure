@@ -1,3 +1,5 @@
 package parallelai.common.secure.diffiehellman
 
-class ServerPublicKey(val value: Array[Byte]) extends AnyVal
+import java.security.KeyPair
+
+case class ServerPublicKey(value: Array[Byte], keyPair: KeyPair)
