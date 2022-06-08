@@ -37,5 +37,3 @@ object ServerPublicKey extends PublicKeyJsonFormat {
   implicit val serverPublicKeyRootJsonFormat: RootJsonFormat[ServerPublicKey] =
     jsonFormat2(ServerPublicKey.apply)
 }
-
-case class ServerSharedSecret(value: Array[Byte])
