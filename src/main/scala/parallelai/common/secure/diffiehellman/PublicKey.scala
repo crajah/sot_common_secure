@@ -1,9 +1,9 @@
 package parallelai.common.secure.diffiehellman
 
 import java.security.KeyPair
-import java.util.Base64.{ getDecoder, getEncoder }
+import java.util.Base64.{getDecoder, getEncoder}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{ JsString, JsValue, RootJsonFormat, deserializationError }
+import spray.json.{JsString, JsValue, RootJsonFormat, deserializationError}
 import org.apache.commons.lang3.SerializationUtils._
 
 sealed trait PublicKey {
