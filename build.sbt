@@ -44,6 +44,6 @@ lazy val sot_common_secure = (project in file("."))
       jodaTime,
       grizzledLogging,
       logback,
-      upickle
+      commonsLang
     ) ++ circe
   )

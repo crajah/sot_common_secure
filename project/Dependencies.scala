@@ -16,5 +16,5 @@ object Dependencies {
 
   val jodaTime = "joda-time" % "joda-time" % "2.9.9"
 
-  val upickle = "com.lihaoyi" %% "upickle" % "0.5.1"
+  val commonsLang = "org.apache.commons" % "commons-lang3" % "3.7"
 }
