@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val scalaTest = "org.scalatest" %% "scalatest" % "3.0.3"
+  val scalaTest = "org.scalatest" %% "scalatest" % "3.0.5"
 
   val grizzledLogging = "org.clapper" %% "grizzled-slf4j" % "1.3.2"
   val logback = "ch.qos.logback" % "logback-classic" % "1.2.3"
