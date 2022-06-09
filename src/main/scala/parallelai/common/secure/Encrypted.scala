@@ -1,6 +1,6 @@
 package parallelai.common.secure
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{ Decoder, Encoder }
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 

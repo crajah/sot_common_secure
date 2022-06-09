@@ -6,15 +6,12 @@ import javax.crypto.KeyAgreement
 import grizzled.slf4j.Logging
 
 object DiffieHellmanClient extends Logging {
-  def createClientPublicKey: ClientPublicKey = {
-    info("DH Client: Generate DH keypair ...")
-    val clientKeyPairGenerator = KeyPairGenerator getInstance "DH"
-    clientKeyPairGenerator initialize 2048
+  info("DH Client: Generate DH keypair ...")
+  private val clientKeyPairGenerator: KeyPairGenerator = KeyPairGenerator getInstance "DH"
+  private val clientKeyPair = clientKeyPairGenerator.generateKeyPair
 
-    val clientKeyPair = clientKeyPairGenerator.generateKeyPair
-
-    ClientPublicKey(clientKeyPair.getPublic.getEncoded, clientKeyPair)
-  }
+  def createClientPublicKey: ClientPublicKey =
+    ClientPublicKey(clientKeyPair.getPublic.getEncoded)
 
   def createClientSharedSecret(serverPublicKey: ServerPublicKey): ClientSharedSecret = {
     val clientKeyFactory = KeyFactory getInstance "DH"
@@ -22,7 +19,7 @@ object DiffieHellmanClient extends Logging {
 
     info("DH Client: Initialization - create and initialize DH KeyAgreement object ...")
     val clientKeyAgreement: KeyAgreement = KeyAgreement getInstance "DH"
-    clientKeyAgreement init serverPublicKey.keyPair.getPrivate
+    clientKeyAgreement init clientKeyPair.getPrivate
 
     info("DH Client: Execute PHASE1 ...")
     clientKeyAgreement.doPhase(clientKeyFactory.generatePublic(x509KeySpec), true)

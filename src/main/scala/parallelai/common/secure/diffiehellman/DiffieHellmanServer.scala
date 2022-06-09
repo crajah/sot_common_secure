@@ -29,6 +29,6 @@ object DiffieHellmanServer extends Logging {
     info("DH Server: Execute PHASE1 ...")
     serverKeyAgreement.doPhase(publicKey, true)
 
-    (ServerPublicKey(serverKeyPair.getPublic.getEncoded, clientPublicKey.keyPair), ServerSharedSecret(serverKeyAgreement.generateSecret))
+    (ServerPublicKey(serverKeyPair.getPublic.getEncoded), ServerSharedSecret(serverKeyAgreement.generateSecret))
   }
 }

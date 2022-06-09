@@ -6,9 +6,9 @@ import spray.json._
 class PublicKeySpec extends WordSpec with MustMatchers {
   "Client public key" should {
     "be converted to JSON" in {
-      val x = DiffieHellmanClient.createClientPublicKey
+      val clientPublicKey = DiffieHellmanClient.createClientPublicKey
 
-      println(x.toJson)
+      clientPublicKey.toJson.convertTo[ClientPublicKey].value mustEqual clientPublicKey.value
     }
   }
 }
