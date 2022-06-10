@@ -1,7 +1,7 @@
 package parallelai.common.secure.diffiehellman
 
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
+import io.circe.{ Decoder, Encoder }
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
