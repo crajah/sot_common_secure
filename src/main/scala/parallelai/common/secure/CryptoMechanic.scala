@@ -4,59 +4,6 @@ import java.security.{ AlgorithmParameters, Key, MessageDigest }
 import java.util.Base64
 import javax.crypto._
 import javax.crypto.spec.{ DESKeySpec, SecretKeySpec }
-import scala.language.implicitConversions
-
-sealed trait Algorithm {
-  def name: String
-
-  def value: String
-
-  override def toString: String = name
-}
-
-case object HS256 extends Algorithm {
-  val name = "HS256"
-  val value = "HmacSHA256"
-}
-
-case object HS384 extends Algorithm {
-  val name = "HS384"
-  val value = "HmacSHA384"
-}
-
-case object HS512 extends Algorithm {
-  val name = "HS512"
-  val value = "HmacSHA512"
-}
-
-case object NONE extends Algorithm {
-  val name = "NONE"
-  val value = "NONE"
-}
-
-case object AES extends Algorithm {
-  val name = "AES"
-  val value = "AES/CBC/PKCS5Padding"
-}
-
-case object DES extends Algorithm {
-  val name = "DES"
-  val value = "DES/CBC/PKCS5Padding"
-}
-
-case class CryptoResult[T](payload: T, params: Option[Array[Byte]] = None)
-
-object Algorithm {
-  def apply(name: String): Algorithm = name match {
-    case s if s == HS256.name => HS256
-    case s if s == HS384.name => HS384
-    case s if s == HS512.name => HS512
-    case s if s == AES.name => AES
-    case s if s == DES.name => DES
-    case s if s == NONE.name => NONE
-    case _ => throw new Exception("Unknown Algorithm")
-  }
-}
 
 class CryptoMechanic(algorithm: Algorithm = AES, secret: Array[Byte]) extends ConversionHelper {
   private var charset: String = "utf-8"
