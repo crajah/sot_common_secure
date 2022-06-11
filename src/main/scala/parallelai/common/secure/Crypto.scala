@@ -1,10 +1,14 @@
 package parallelai.common.secure
 
-import java.security.MessageDigest
-import java.util.Base64
+import java.security.{Key, MessageDigest}
+import java.util.{Base64, UUID}
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.{DESKeySpec, SecretKeySpec}
 import scala.language.implicitConversions
 
-trait ConversionHelper {
+object Crypto extends Crypto
+
+trait Crypto {
   implicit def string2Bytes(s: String): Array[Byte] = s.getBytes()
 
   implicit def bytes2String(b: Array[Byte]): String = new String(b)
@@ -67,4 +71,22 @@ trait ConversionHelper {
 
     buf.toString
   }
+
+  def secretKey(algorithm: Algorithm = AES, secret: Array[Byte] = UUID.randomUUID().toString.getBytes): Key =
+    algorithm match {
+      case AES =>
+        new SecretKeySpec(secret, 0, 16, algorithm.name)
+
+      case DES =>
+        val keySpec = new DESKeySpec(secret)
+        SecretKeyFactory.getInstance(algorithm.name).generateSecret(keySpec)
+
+      case _ => new Key {
+        override def getEncoded: Array[Byte] = secret
+
+        override def getAlgorithm: String = algorithm.name
+
+        override def getFormat: String = algorithm.value
+      }
+    }
 }

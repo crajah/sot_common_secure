@@ -2,7 +2,7 @@ package parallelai.common.secure
 
 import org.scalatest._
 
-class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
+class CryptoTest extends FlatSpec with Matchers with Crypto {
   "AES" should "encrypt and decrypt" in {
     val crypto = new CryptoMechanic(AES, "Some secrrem is not a secret but secretly some".getBytes()) {}
 
@@ -90,7 +90,7 @@ class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
   }
 
   "B64 Bytes" should "encode and decode" in {
-    val ch = new ConversionHelper {}
+    val ch = new Crypto {}
 
     val in = "Thi sis a sone ggah".getBytes()
 
@@ -101,7 +101,7 @@ class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
   }
 
   "B64 String" should "encode and decode" in {
-    val ch = new ConversionHelper {}
+    val ch = new Crypto {}
 
     val in = "Thi sis a sone ggah".getBytes()
 

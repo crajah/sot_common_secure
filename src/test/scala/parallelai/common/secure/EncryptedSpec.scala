@@ -5,7 +5,7 @@ import spray.json._
 import org.scalatest.{ MustMatchers, WordSpec }
 
 class EncryptedSpec extends WordSpec with MustMatchers {
-  implicit val crypto: CryptoMechanic = new CryptoMechanic(secret = "victorias secret".getBytes)
+  implicit val crypto: CryptoMechanic = new CryptoMechanic(AES, secret = "victorias secret".getBytes)
 
   "Encrypted" should {
     "encrypt and decrypt given some Crypto mechanism" in {

@@ -1,8 +1,8 @@
 package parallelai.common.secure
 
 import java.io.InputStream
-import java.security.{ KeyStore, MessageDigest, PrivateKey }
-import javax.net.ssl.{ KeyManagerFactory, TrustManagerFactory }
+import java.security.{KeyStore, MessageDigest, PrivateKey}
+import javax.net.ssl.{KeyManagerFactory, TrustManagerFactory}
 
 trait KeySupport {
   val keyStoreName: String
@@ -55,5 +55,4 @@ object DefaultDESCrypto extends KeySupport {
   val keyAlias: String = "test"
 
   val crypto = new CryptoMechanic(DES, defaultSecret)
-  crypto.setCharset("utf-8")
 }

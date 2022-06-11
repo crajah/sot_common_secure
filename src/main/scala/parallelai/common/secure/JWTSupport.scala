@@ -107,14 +107,14 @@ protected trait JWTSupport extends DefaultJsonProtocol {
 
   def jwtToken(jwt: JWT): String = {
     val headerJson = jwt.header.copy(alg = crypto.getAlgorithm.name).toJson.toString
-    val headerB64String = Base64.getUrlEncoder.encodeToString(headerJson.getBytes(crypto.getCharset))
+    val headerB64String = Base64.getUrlEncoder.encodeToString(headerJson.getBytes(crypto.charset))
 
     val reservedClaimsJson = jwt.reserved.toJson
     val defaulClaimsJson = jwt.default.toJson
     val payloadMap = jwt.payload
 
     val allClaims = reservedClaimsJson.asJsObject.fields ++ defaulClaimsJson.asJsObject.fields ++ payloadMap.map(p => { (p._1, JsString(p._2)) })
-    val claimsB64String = Base64.getUrlEncoder.encodeToString(JsObject(allClaims).toString.getBytes(crypto.getCharset))
+    val claimsB64String = Base64.getUrlEncoder.encodeToString(JsObject(allClaims).toString.getBytes(crypto.charset))
 
     val prefix = headerB64String + "." + claimsB64String
 
@@ -144,8 +144,8 @@ protected trait JWTSupport extends DefaultJsonProtocol {
 
       require(signatureB64 == expectedB64Signature, "Signature Does not Match")
 
-      val headerStr: String = new String(Base64.getUrlDecoder.decode(headerB64.getBytes(crypto.getCharset)))
-      val payloadStr: String = new String(Base64.getUrlDecoder.decode(payloadB64.getBytes(crypto.getCharset)))
+      val headerStr: String = new String(Base64.getUrlDecoder.decode(headerB64.getBytes(crypto.charset)))
+      val payloadStr: String = new String(Base64.getUrlDecoder.decode(payloadB64.getBytes(crypto.charset)))
 
       val jwtHeader: JWTHeader = headerStr.parseJson.convertTo[JWTHeader]
       val expectedAlg = Algorithm(jwtHeader.alg)
