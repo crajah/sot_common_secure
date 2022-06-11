@@ -1,9 +1,8 @@
 package parallelai.common.secure
 
-import java.security.{Key, MessageDigest}
-import java.util.{Base64, UUID}
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.{DESKeySpec, SecretKeySpec}
+import java.security.{MessageDigest, SecureRandom}
+import java.util.Base64
+import javax.crypto.{KeyGenerator, SecretKey}
 import scala.language.implicitConversions
 
 object Crypto extends Crypto
@@ -72,21 +71,10 @@ trait Crypto {
     buf.toString
   }
 
-  def secretKey(algorithm: Algorithm = AES, secret: Array[Byte] = UUID.randomUUID().toString.getBytes): Key =
-    algorithm match {
-      case AES =>
-        new SecretKeySpec(secret, 0, 16, algorithm.name)
+  def aesKey: SecretKey = {
+    val keyGenerator = KeyGenerator.getInstance(AES.name)
+    keyGenerator.init(256, new SecureRandom)
 
-      case DES =>
-        val keySpec = new DESKeySpec(secret)
-        SecretKeyFactory.getInstance(algorithm.name).generateSecret(keySpec)
-
-      case _ => new Key {
-        override def getEncoded: Array[Byte] = secret
-
-        override def getAlgorithm: String = algorithm.name
-
-        override def getFormat: String = algorithm.value
-      }
-    }
+    keyGenerator.generateKey
+  }
 }

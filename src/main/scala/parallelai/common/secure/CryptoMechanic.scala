@@ -1,12 +1,18 @@
 package parallelai.common.secure
 
 import java.nio.charset.{Charset, StandardCharsets}
-import java.security.AlgorithmParameters
+import java.security.{AlgorithmParameters, Key}
 import java.util.Base64
 import javax.crypto._
-import javax.crypto.spec.SecretKeySpec
+import javax.crypto.spec.{DESKeySpec, SecretKeySpec}
 
 class CryptoMechanic(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = StandardCharsets.UTF_8) extends Crypto {
+  def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
+    perform(msg, ENCRYPT, params)
+
+  def decrypt[I, O](code: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
+    perform(code, DECRYPT, params)
+
   def getAlgorithm: Algorithm = algorithm
 
   def getSignature(payload: Array[Byte]): Array[Byte] =
@@ -26,17 +32,35 @@ class CryptoMechanic(algorithm: Algorithm, secret: Array[Byte], val charset: Cha
   def getB64Signature(payload: String): String =
     Base64.getUrlEncoder.encodeToString(getSignature(payload))
 
+  private def secretKey: Key =
+    algorithm match {
+      case AES =>
+        new SecretKeySpec(secret, 0, 16, algorithm.name)
+
+      case DES =>
+        val keySpec = new DESKeySpec(secret)
+        SecretKeyFactory.getInstance(algorithm.name).generateSecret(keySpec)
+
+      case _ => new Key {
+        override def getEncoded: Array[Byte] = secret
+
+        override def getAlgorithm: String = algorithm.name
+
+        override def getFormat: String = algorithm.value
+      }
+    }
+
   private def perform[I, O](msg: I, dir: CIPHER, cipherParams: Option[Array[Byte]] = None)(implicit i: I => Array[Byte], o: Array[Byte] => O): CryptoResult[O] = {
     val cipher = Cipher.getInstance(algorithm.value)
 
     cipherParams match {
       case None =>
-        cipher.init(dir.mode, secretKey(algorithm, secret))
+        cipher.init(dir.mode, secretKey)
 
       case Some(p) =>
         val algoParms = AlgorithmParameters.getInstance(algorithm.name)
         algoParms.init(p)
-        cipher.init(dir.mode, secretKey(algorithm, secret), algoParms)
+        cipher.init(dir.mode, secretKey, algoParms)
     }
 
     val payload = cipher.doFinal(msg)
@@ -44,10 +68,4 @@ class CryptoMechanic(algorithm: Algorithm, secret: Array[Byte], val charset: Cha
 
     CryptoResult[O](payload, Some(params))
   }
-
-  def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
-    perform(msg, ENCRYPT, params)
-
-  def decrypt[I, O](code: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
-    perform(code, DECRYPT, params)
 }
