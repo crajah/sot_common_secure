@@ -7,14 +7,6 @@ import com.amazonaws.regions.{Region, Regions}
 lazy val scala_2_11 = "2.11.11"
 lazy val scala_2_12 = "2.12.4"
 
-lazy val assemblySettings = assemblyMergeStrategy in assembly := {
-  case "application.conf" => MergeStrategy.concat
-  case "project.properties" => MergeStrategy.concat
-  case x =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
-    oldStrategy(x)
-}
-
 lazy val sot_common_secure = (project in file("."))
   .settings(
     name := "sot_common_secure",
@@ -23,7 +15,6 @@ lazy val sot_common_secure = (project in file("."))
       scalaVersion := scala_2_11
     )),
     crossScalaVersions := Seq(scala_2_11, scala_2_12),
-    assemblySettings,
     s3region := Region.getRegion(Regions.EU_WEST_2),
     publishTo := {
       val prefix = if (isSnapshot.value) "snapshot" else "release"
