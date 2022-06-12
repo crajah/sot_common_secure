@@ -2,9 +2,9 @@ package parallelai.common.secure
 
 import io.circe.syntax._
 import spray.json._
-import org.scalatest.{ MustMatchers, WordSpec }
+import org.scalatest.{Inside, MustMatchers, WordSpec}
 
-class EncryptedSpec extends WordSpec with MustMatchers {
+class EncryptedSpec extends WordSpec with MustMatchers with Inside {
   implicit val crypto: CryptoMechanic = new CryptoMechanic(AES, secret = "victorias secret".getBytes)
 
   "Encrypted" should {
@@ -66,6 +66,54 @@ class EncryptedSpec extends WordSpec with MustMatchers {
       val encryptedMessage = Encrypted(message)
 
       encryptedMessage.asJson.as[Encrypted].right.get.decryptT[String] mustEqual message
+    }
+  }
+
+  "Encrypteds" should {
+    "have each entry encrypted and decrypted as a Map of Encrypted" in {
+      val message1 = "Hello world"
+      val message2 = 99
+
+      val encryptedMessages = Encrypteds("message1" -> Encrypted(message1), "message2" -> Encrypted(message2))
+      encryptedMessages("message1").decryptT[String] mustEqual message1
+
+      inside(encryptedMessages.get("message2")) {
+        case Some(encrypted) => encrypted.decryptT[Int] mustEqual message2
+      }
+    }
+
+    "be converted to and from Spray JSON" in {
+      val message1 = "Hello world"
+      val message2 = 99
+
+      val encrypteds = Encrypteds("message1" -> Encrypted(message1), "message2" -> Encrypted(message2))
+      val encryptedsJson = encrypteds.toJson
+
+      encryptedsJson.asJsObject.fields must (contain key "message1" and contain key "message2")
+      encryptedsJson.convertTo[Encrypteds].values must (contain key "message1" and contain key "message2")
+    }
+
+    "be converted to and from Circe JSON" in {
+      val message1 = "Hello world"
+      val message2 = 99
+
+      val encrypteds = Encrypteds("message1" -> Encrypted(message1), "message2" -> Encrypted(message2))
+      val encryptedsJson = encrypteds.asJson
+
+      encryptedsJson.as[Encrypteds].right.get.values must (contain key "message1" and contain key "message2")
+    }
+
+    "be converted to and from bytes" in {
+      def toBytes[T: ToBytes](value: T): Array[Byte] = ToBytes[T].apply(value)
+
+      val message1 = "Hello world"
+      val message2 = 99
+
+      val encrypteds = Encrypteds("message1" -> Encrypted(message1), "message2" -> Encrypted(message2))
+      val serialized = toBytes(encrypteds)
+      val encryptedsDeserialized = FromBytes[Encrypteds].apply(serialized)
+
+      encryptedsDeserialized.values must (contain key "message1" and contain key "message2")
     }
   }
 }

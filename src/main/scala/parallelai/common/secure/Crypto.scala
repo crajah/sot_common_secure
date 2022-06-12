@@ -71,7 +71,11 @@ trait Crypto {
     buf.toString
   }
 
-  def aesKey: SecretKey = {
+  /**
+    * Randomly generated AES secret key
+    * @return SecretKey
+    */
+  def aesSecretKey: SecretKey = {
     val keyGenerator = KeyGenerator.getInstance(AES.name)
     keyGenerator.init(256, new SecureRandom)
 
