@@ -18,8 +18,8 @@ object Encrypted {
   // TODO - Sort out mess
   implicit def decoder[T: Decoder: ToBytes: FromBytes]: Decoder[Encrypted[T]] = new Decoder[Encrypted[T]] {
     def apply(c: HCursor): Result[Encrypted[T]] = {
-      val value = c.top.get.asObject.get("value").get.as[Array[Byte]].right.get
-      val params = c.top.get.asObject.get("params").fold(none[Array[Byte]]) { _.as[Array[Byte]].right.get.some }
+      val value = c.value.asObject.get("value").get.as[Array[Byte]].right.get
+      val params = c.value.asObject.get("params").fold(none[Array[Byte]]) { _.as[Array[Byte]].right.get.some }
 
       Right(Encrypted[T](value, params))
     }
