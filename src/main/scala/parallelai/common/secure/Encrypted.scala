@@ -4,7 +4,7 @@ import cats.implicits._
 import io.circe.Decoder.Result
 import io.circe._
 
-case class Encrypted[T: ToBytes: FromBytes] private (private val value: Array[Byte], private val params: Option[Array[Byte]]) {
+case class Encrypted[T: ToBytes: FromBytes] private (value: Array[Byte], params: Option[Array[Byte]]) {
   def decrypt(implicit crypto: CryptoMechanic): T = Encrypted decrypt this
 }
 
