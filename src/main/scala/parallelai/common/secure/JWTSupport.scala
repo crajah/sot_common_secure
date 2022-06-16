@@ -44,7 +44,7 @@ protected trait JWTSupport extends DefaultJsonProtocol {
   val secret: Array[Byte]
   val algorithm: Algorithm
 
-  private val crypto = new CryptoMechanic(algorithm, secret)
+  private val crypto = new Crypto(algorithm, secret)
 
   implicit object DateTimeFormat extends RootJsonFormat[DateTime] {
     val formatter: DateTimeFormatter = ISODateTimeFormat.basicDateTime

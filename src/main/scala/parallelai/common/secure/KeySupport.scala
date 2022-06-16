@@ -54,5 +54,5 @@ object DefaultDESCrypto extends KeySupport {
   val keyStorePass: String = "password"
   val keyAlias: String = "test"
 
-  val crypto = new CryptoMechanic(DES, defaultSecret)
+  val crypto = new Crypto(DES, defaultSecret)
 }

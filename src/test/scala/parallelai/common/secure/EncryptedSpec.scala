@@ -6,7 +6,7 @@ import io.circe.syntax._
 import org.scalatest.{Inside, MustMatchers, WordSpec}
 
 class EncryptedSpec extends WordSpec with MustMatchers with Inside {
-  implicit val crypto: CryptoMechanic = new CryptoMechanic(AES, secret = "victorias secret".getBytes)
+  implicit val crypto: Crypto = new Crypto(AES, secret = "victorias secret".getBytes)
 
   "Encrypted" should {
     "encrypt and decrypt given some Crypto mechanism" in {

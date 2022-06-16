@@ -3,6 +3,7 @@ import Dependencies._
 import sbt.Resolver
 import sbt.Keys.{libraryDependencies, publishTo}
 import com.amazonaws.regions.{Region, Regions}
+import com.scalapenos.sbt.prompt.SbtPrompt.autoImport._
 
 lazy val scala_2_11 = "2.11.11"
 lazy val scala_2_12 = "2.12.4"
@@ -14,6 +15,7 @@ lazy val sot_common_secure = (project in file("."))
       organization := "parallelai",
       scalaVersion := scala_2_11
     )),
+    promptTheme := com.scalapenos.sbt.prompt.PromptThemes.ScalapenosTheme,
     crossScalaVersions := Seq(scala_2_11, scala_2_12),
     s3region := Region.getRegion(Regions.EU_WEST_2),
     publishTo := {

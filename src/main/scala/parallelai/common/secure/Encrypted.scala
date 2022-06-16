@@ -5,7 +5,7 @@ import io.circe.Decoder.Result
 import io.circe._
 
 case class Encrypted[T: ToBytes: FromBytes] private (value: Array[Byte], params: Option[Array[Byte]]) {
-  def decrypt(implicit crypto: CryptoMechanic): T = Encrypted decrypt this
+  def decrypt(implicit crypto: Crypto): T = Encrypted decrypt this
 }
 
 object Encrypted {
@@ -25,12 +25,12 @@ object Encrypted {
     }
   }
 
-  def apply[T: ToBytes: FromBytes](value: T)(implicit crypto: CryptoMechanic): Encrypted[T] = {
+  def apply[T: ToBytes: FromBytes](value: T)(implicit crypto: Crypto): Encrypted[T] = {
     val CryptoResult(cryptoPayload, cryptoParams) = crypto.encrypt(ToBytes[T].apply(value))
 
     new Encrypted(cryptoPayload.repr, cryptoParams)
   }
 
-  def decrypt[T: FromBytes](encrypted: Encrypted[T])(implicit crypto: CryptoMechanic): T =
+  def decrypt[T: FromBytes](encrypted: Encrypted[T])(implicit crypto: Crypto): T =
     FromBytes[T].apply(crypto.decrypt(encrypted.value, encrypted.params).payload.repr)
 }
