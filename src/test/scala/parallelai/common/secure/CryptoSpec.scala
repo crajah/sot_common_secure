@@ -34,7 +34,6 @@ class CryptoSpec extends FlatSpec with Matchers {
     println("AES Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "DES Signature" should "encrypt and decrypt" in {
@@ -47,7 +46,6 @@ class CryptoSpec extends FlatSpec with Matchers {
     println("DES Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS512 Signature" should "encrypt and decrypt" in {
@@ -60,7 +58,6 @@ class CryptoSpec extends FlatSpec with Matchers {
     println("HS512 Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS384 Signature" should "encrypt and decrypt" in {
@@ -73,7 +70,6 @@ class CryptoSpec extends FlatSpec with Matchers {
     println("HS384 Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS256 Signature" should "encrypt and decrypt" in {
