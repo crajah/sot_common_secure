@@ -83,7 +83,7 @@ class CryptoSpec extends FlatSpec with Matchers {
 
     val s_p = crypto.getSignature(in)
 
-    println("HS256 Sig: " + Crypto.toHexString(s_p))
+    println("HS256 Sig: " + crypto.toHexString(s_p))
 
     in should not equal s_p
   }

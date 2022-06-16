@@ -7,9 +7,12 @@ import scala.language.implicitConversions
 import javax.crypto._
 import javax.crypto.spec.{DESKeySpec, SecretKeySpec}
 
-class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = StandardCharsets.UTF_8) extends {
-  import Crypto._
+object Crypto extends CryptoUtil {
+  def apply(algorithm: Algorithm, secret: Array[Byte], charset: Charset = StandardCharsets.UTF_8) =
+    new Crypto(algorithm, secret, charset)
+}
 
+class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = StandardCharsets.UTF_8) extends CryptoUtil {
   def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
     perform(msg, ENCRYPT, params)
 
@@ -73,13 +76,10 @@ class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = S
   }
 }
 
-object Crypto {
-  implicit def string2Bytes(s: String): Array[Byte] = s.getBytes()
+sealed trait CryptoUtil {
+  implicit def string2Bytes(s: String): Array[Byte] = s.getBytes
 
   implicit def bytes2String(b: Array[Byte]): String = new String(b)
-
-  def apply(algorithm: Algorithm, secret: Array[Byte], charset: Charset = StandardCharsets.UTF_8) =
-    new Crypto(algorithm, secret, charset)
 
   def toB64[I, O](bytes: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
     Base64.getEncoder encode bytes
@@ -107,7 +107,8 @@ object Crypto {
 
   /**
     * Converts a byte to hex digit and writes to the supplied buffer
-    * @param b Byte
+    *
+    * @param b   Byte
     * @param buf StringBuffer
     */
   def byte2hex(b: Byte, buf: StringBuffer): Unit = {
@@ -120,6 +121,7 @@ object Crypto {
 
   /**
     * Converts a byte array to hex string
+    *
     * @param block Array[Byte]
     * @return String
     */
@@ -142,6 +144,7 @@ object Crypto {
 
   /**
     * Randomly generated AES secret key
+    *
     * @return SecretKey
     */
   def aesSecretKey: SecretKey = {
