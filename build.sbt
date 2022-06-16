@@ -6,7 +6,7 @@ import com.amazonaws.regions.{Region, Regions}
 import com.scalapenos.sbt.prompt.SbtPrompt.autoImport._
 
 lazy val scala_2_11 = "2.11.11"
-lazy val scala_2_12 = "2.12.4"
+lazy val scala_2_12 = "2.12.5"
 
 lazy val sot_common_secure = (project in file("."))
   .settings(
