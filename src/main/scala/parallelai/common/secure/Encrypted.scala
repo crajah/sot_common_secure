@@ -29,6 +29,11 @@ object Encrypted {
     new Encrypted(Base64.getEncoder.encode(cryptoPayload.repr), cryptoParams.map(Base64.getEncoder.encode))
   }
 
+  def apply[T: ToBytes: FromBytes](value: T, crypto: Crypto): Encrypted[T] = {
+    implicit val cryptoImplicit: Crypto = crypto
+    apply(value)
+  }
+
   def decrypt[T: FromBytes](encrypted: Encrypted[T])(implicit crypto: Crypto): T =
     FromBytes[T].apply(crypto.decrypt(Base64.getDecoder.decode(encrypted.value), encrypted.params.map(Base64.getDecoder.decode)).payload.repr)
 }
