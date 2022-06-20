@@ -20,7 +20,7 @@ object ToBytes {
     def apply(a: Array[Byte]): Array[Byte] = a
   }
 
-  implicit val secretKey: ToBytes[SecretKey] = new ToBytes[SecretKey] {
+  implicit val secretKeyToBytes: ToBytes[SecretKey] = new ToBytes[SecretKey] {
     def apply(s: SecretKey): Array[Byte] = serialize(s)
   }
 

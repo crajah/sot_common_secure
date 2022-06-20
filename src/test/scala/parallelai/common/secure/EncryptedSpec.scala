@@ -63,5 +63,25 @@ class EncryptedSpec extends WordSpec with MustMatchers with Inside {
 
       encryptedMessage.decrypt(crypto) mustEqual message
     }
+
+    "encrypt data, serialize, deserialize and then decrypt" in {
+      val message = "Hello world"
+
+      val encryptedMessage = Encrypted(message)
+
+      val encryptedBytes: Array[Byte] = ToBytes[Encrypted[String]].apply(encryptedMessage)
+      val encryptedMessageResult: Encrypted[String] = FromBytes[Encrypted[String]].apply(encryptedBytes)
+
+      encryptedMessageResult.decrypt mustEqual message
+    }
+
+    "encrypt an array of bytes, serialize, deserialize and then decrypt" in {
+      val bytes = "Hello world".getBytes
+
+      val encryptedBytes = Encrypted(bytes)
+      val encryptedBytesResult = FromBytes[Encrypted[Array[Byte]]].apply(ToBytes[Encrypted[Array[Byte]]].apply(encryptedBytes))
+
+      new String(encryptedBytesResult.decrypt) mustEqual "Hello world"
+    }
   }
 }
