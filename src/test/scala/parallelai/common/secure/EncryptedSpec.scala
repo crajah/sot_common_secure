@@ -39,8 +39,6 @@ class EncryptedSpec extends WordSpec with MustMatchers with Inside {
       val encryptedMessage = Encrypted(message)
       val encryptedJson: Json = encryptedMessage.asJson
 
-      println(encryptedJson)
-
       val decryptedMessage = encryptedJson.as[Encrypted[String]].right.get.decrypt
 
       decryptedMessage mustEqual message

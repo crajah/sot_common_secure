@@ -1,5 +1,8 @@
 package parallelai.common.secure
 
+import javax.crypto.SecretKey
+import org.apache.commons.lang3.SerializationUtils.serialize
+
 trait ToBytes[T] {
   def apply(t: T): Array[Byte]
 }
@@ -15,6 +18,10 @@ object ToBytes {
 
   implicit val bytesToBytes: ToBytes[Array[Byte]] = new ToBytes[Array[Byte]] {
     def apply(a: Array[Byte]): Array[Byte] = a
+  }
+
+  implicit val secretKey: ToBytes[SecretKey] = new ToBytes[SecretKey] {
+    def apply(s: SecretKey): Array[Byte] = serialize(s)
   }
 
   def apply[T: ToBytes]: ToBytes[T] = implicitly[ToBytes[T]]
