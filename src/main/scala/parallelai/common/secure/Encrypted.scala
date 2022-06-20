@@ -8,6 +8,8 @@ import org.apache.commons.lang3.SerializationUtils.{deserialize, serialize}
 
 case class Encrypted[T: ToBytes: FromBytes] private (value: Array[Byte], params: Option[Array[Byte]]) {
   def decrypt(implicit crypto: Crypto): T = Encrypted decrypt this
+
+  def toBytes: Array[Byte] = Encrypted toBytes this
 }
 
 object Encrypted {
@@ -48,4 +50,10 @@ object Encrypted {
 
   def decrypt[T: FromBytes](encrypted: Encrypted[T])(implicit crypto: Crypto): T =
     FromBytes[T].apply(crypto.decrypt(Base64.getDecoder.decode(encrypted.value), encrypted.params.map(Base64.getDecoder.decode)).payload.repr)
+
+  def toBytes[T: ToBytes: FromBytes](t: Encrypted[T]): Array[Byte] =
+    encryptedToBytes[T].apply(t)
+
+  def fromBytes[T: ToBytes: FromBytes](a: Array[Byte]) =
+    encryptedFromBytes[T].apply(a)
 }

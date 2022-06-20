@@ -9,6 +9,15 @@ class EncryptedSpec extends WordSpec with MustMatchers with Inside {
   implicit val crypto: Crypto = Crypto(AES, secret = "victorias secret".getBytes)
 
   "Encrypted" should {
+    "be converted to bytes and back again" in {
+      val bytes = "Hello world".getBytes
+
+      val encryptedBytes = Encrypted(bytes).toBytes
+      val encryptedFromBytes: Encrypted[Array[Byte]] = Encrypted.fromBytes[Array[Byte]](encryptedBytes)
+
+      new String(encryptedFromBytes.decrypt) mustEqual "Hello world"
+    }
+
     "encrypt and decrypt given some Crypto mechanism" in {
       val message = "Hello world"
 
