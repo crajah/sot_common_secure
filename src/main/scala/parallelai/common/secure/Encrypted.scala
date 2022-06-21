@@ -51,6 +51,11 @@ object Encrypted {
   def decrypt[T: FromBytes](encrypted: Encrypted[T])(implicit crypto: Crypto): T =
     FromBytes[T].apply(crypto.decrypt(Base64.getDecoder.decode(encrypted.value), encrypted.params.map(Base64.getDecoder.decode)).payload.repr)
 
+  def decrypt[T: FromBytes](encrypted: Encrypted[T], crypto: Crypto): T = {
+    implicit val cryptoImplicit: Crypto = crypto
+    decrypt(encrypted)
+  }
+
   def toBytes[T: ToBytes: FromBytes](t: Encrypted[T]): Array[Byte] =
     encryptedToBytes[T].apply(t)
 
