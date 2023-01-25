@@ -8,7 +8,7 @@ lazy val sot_common_secure = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "parallelai",
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.12.5",
       version      := "0.1.3"
     )),
     name := "sot_common_secure",

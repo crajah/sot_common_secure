@@ -17,8 +17,7 @@ import java.util.UUID
 
 case class JWTHeader(
   alg: String = "HS256",
-  typ: String = "JWT"
-)
+  typ: String = "JWT")
 
 case class JWTReservedClaims(
   exp: Option[DateTime] = None // Expiry
@@ -32,15 +31,13 @@ case class JWTReservedClaims(
 )
 
 case class JWTDefaultClaims(
-  application_id: Option[String] = None, account_id: Option[String] = None, session_id: Option[String] = None, verify_id: Option[String] = None, context_id: Option[String] = None, isVerified: Option[Boolean] = None, isValidated: Option[Boolean] = None, isLive: Option[Boolean] = None, _any_json: Option[String] = None
-)
+  application_id: Option[String] = None, account_id: Option[String] = None, session_id: Option[String] = None, verify_id: Option[String] = None, context_id: Option[String] = None, isVerified: Option[Boolean] = None, isValidated: Option[Boolean] = None, isLive: Option[Boolean] = None, _any_json: Option[String] = None)
 
 case class JWT(
-  header: JWTHeader, reserved: JWTReservedClaims, default: JWTDefaultClaims, payload: Map[String, String]
-)
+  header: JWTHeader, reserved: JWTReservedClaims, default: JWTDefaultClaims, payload: Map[String, String])
 
-protected trait JWTSupport
-    extends DefaultJsonProtocol {
+trait JWTSupport
+  extends DefaultJsonProtocol {
   val iss: String
   val aud: String
   val prn: String
@@ -90,8 +87,7 @@ protected trait JWTSupport
       JWTHeader(),
       getDefaultReservedClaims,
       default,
-      Map()
-    )
+      Map())
   }
 
   private def getDefaultReservedClaims(): JWTReservedClaims = {
@@ -103,8 +99,7 @@ protected trait JWTSupport
       aud = Some(aud),
       prn = Some(prn),
       jti = Some(UUID.randomUUID().toString),
-      typ = Some(typ)
-    )
+      typ = Some(typ))
   }
 
   def getJWTToken(jwt: JWT): String = {
@@ -266,6 +261,5 @@ trait JWTMechanic {
     account_id = Some(account_id),
     session_id = session_id,
     verify_id = verify_id,
-    context_id = context_id
-  )))
+    context_id = context_id)))
 }
