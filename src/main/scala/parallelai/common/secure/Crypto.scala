@@ -3,16 +3,17 @@ package parallelai.common.secure
 import java.nio.charset.{Charset, StandardCharsets}
 import java.security.{AlgorithmParameters, Key, MessageDigest, SecureRandom}
 import java.util.Base64
+
 import scala.language.implicitConversions
 import javax.crypto._
-import javax.crypto.spec.{DESKeySpec, SecretKeySpec}
+import javax.crypto.spec.{DESKeySpec, IvParameterSpec, SecretKeySpec}
 
 object Crypto extends CryptoUtil {
-  def apply(algorithm: Algorithm, secret: Array[Byte], charset: Charset = StandardCharsets.UTF_8) =
-    new Crypto(algorithm, secret, charset)
+  def apply(algorithm: Algorithm, secret: Array[Byte], charset: Charset = StandardCharsets.UTF_8, randomIv: Boolean = false) =
+    new Crypto(algorithm, secret, charset, randomIv)
 }
 
-class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = StandardCharsets.UTF_8) extends CryptoUtil {
+class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = StandardCharsets.UTF_8, val randomIv: Boolean = false) extends CryptoUtil {
   def encrypt[I, O](msg: I, params: Option[Array[Byte]] = None)(implicit m: I => Array[Byte], n: Array[Byte] => O): CryptoResult[O] =
     perform(msg, ENCRYPT, params)
 
@@ -21,7 +22,7 @@ class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = S
 
   def getAlgorithm: Algorithm = algorithm
 
-  def getSignature(payload: Array[Byte]): Array[Byte] =
+  def getSignature(payload: Array[Byte]): Array[Byte] = {
     algorithm match {
       case HS256 | HS384 | HS512 =>
         val mac: Mac = Mac.getInstance(algorithm.value)
@@ -34,6 +35,7 @@ class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = S
       case NONE =>
         "" getBytes charset
     }
+  }
 
   def getB64Signature(payload: String): String =
     Base64.getUrlEncoder.encodeToString(getSignature(payload))
@@ -60,8 +62,12 @@ class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = S
     val cipher = Cipher.getInstance(algorithm.value)
 
     cipherParams match {
-      case None =>
-        cipher.init(dir.mode, secretKey)
+      case None => if (randomIv) cipher.init(dir.mode, secretKey)
+      else cipher.init(dir.mode, secretKey, new IvParameterSpec(" " * (algorithm match {
+        case AES => 16
+        case DES => 8
+        case _ => 0
+      })))
 
       case Some(p) =>
         val algoParms = AlgorithmParameters.getInstance(algorithm.name)
@@ -76,81 +82,3 @@ class Crypto(algorithm: Algorithm, secret: Array[Byte], val charset: Charset = S
   }
 }
 
-sealed trait CryptoUtil {
-  implicit def string2Bytes(s: String): Array[Byte] = s.getBytes
-
-  implicit def bytes2String(b: Array[Byte]): String = new String(b)
-
-  def toB64[I, O](bytes: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
-    Base64.getEncoder encode bytes
-
-  def fromB64[I, O](b64: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
-    Base64.getDecoder decode b64
-
-  def toB64String[I](bytes: I)(implicit i: I => Array[Byte]): String =
-    Base64.getEncoder encodeToString bytes
-
-  def fromB64String[O](b64: String)(implicit o: Array[Byte] => O): O =
-    Base64.getDecoder decode b64
-
-  def toSHA256[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
-    MessageDigest getInstance "SHA-256" digest s
-
-  def toSHA1[I, O](s: I)(implicit i: I => Array[Byte], o: Array[Byte] => O): O =
-    MessageDigest getInstance "SHA-1" digest s
-
-  def getFirstNBytes(a: Array[Byte], n: Int = 16): Array[Byte] = {
-    val o = new Array[Byte](n)
-    Array.copy(a, 0, o, 0, n)
-    o
-  }
-
-  /**
-    * Converts a byte to hex digit and writes to the supplied buffer
-    *
-    * @param b   Byte
-    * @param buf StringBuffer
-    */
-  def byte2hex(b: Byte, buf: StringBuffer): Unit = {
-    val hexChars = Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
-    val high = (b & 0xf0) >> 4
-    val low = b & 0x0f
-    buf.append(hexChars(high))
-    buf.append(hexChars(low))
-  }
-
-  /**
-    * Converts a byte array to hex string
-    *
-    * @param block Array[Byte]
-    * @return String
-    */
-  def toHexString(block: Array[Byte]): String = {
-    val buf = new StringBuffer
-    val len = block.length
-    var i = 0
-
-    while (i < len) {
-      byte2hex(block(i), buf)
-
-      if (i < len - 1) buf.append(":")
-
-      i += 1
-      i - 1
-    }
-
-    buf.toString
-  }
-
-  /**
-    * Randomly generated AES secret key
-    *
-    * @return SecretKey
-    */
-  def aesSecretKey: SecretKey = {
-    val keyGenerator = KeyGenerator.getInstance(AES.name)
-    keyGenerator.init(256, new SecureRandom)
-
-    keyGenerator.generateKey
-  }
-}
