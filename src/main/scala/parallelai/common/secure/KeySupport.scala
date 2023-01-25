@@ -1,17 +1,18 @@
 package parallelai.common.secure
 
 import java.io.InputStream
-import java.security.{ KeyStore, MessageDigest, PrivateKey }
-import javax.net.ssl.{ KeyManagerFactory, TrustManagerFactory }
+import java.security.{KeyStore, MessageDigest, PrivateKey}
+import javax.net.ssl.{KeyManagerFactory, TrustManagerFactory}
 
-/**
- * Created by charaj on 17/05/2017.
- */
 trait KeySupport {
   val keyStoreName: String
   val keyStoreType: String
   val keyStorePass: String
   val keyAlias: String
+
+  lazy val defaultSecret: Array[Byte] = getSecret(defaultKeyStore, keyAlias, keyStorePass)
+
+  lazy val defaultKeyStore: KeyStore = getKeyStore(keyStoreName, keyStoreType, keyStorePass)
 
   def getKeyStore(keyStoreName: String, keyStoreType: String, keyStorePassword: String): KeyStore = {
     val password: Array[Char] = keyStorePassword.toCharArray
@@ -31,20 +32,17 @@ trait KeySupport {
     //.map("%02X" format _).mkString
   }
 
-  lazy val getDefaultSecret = getSecret(getDefaultKeyStore, keyAlias, keyStorePass)
-  lazy val getDefaultKeyStore = getKeyStore(keyStoreName, keyStoreType, keyStorePass)
-
-  def getDefaultKeyManagerFactory() = {
+  def getDefaultKeyManagerFactory: KeyManagerFactory = {
     val password: Array[Char] = keyStorePass.toCharArray
     val keyManagerFactory: KeyManagerFactory = KeyManagerFactory.getInstance("SunX509")
-    keyManagerFactory.init(getDefaultKeyStore, password)
+    keyManagerFactory.init(defaultKeyStore, password)
 
     keyManagerFactory
   }
 
-  def getDefaultTrustManagerFactory() = {
+  def getDefaultTrustManagerFactory: TrustManagerFactory = {
     val tmf: TrustManagerFactory = TrustManagerFactory.getInstance("SunX509")
-    tmf.init(getDefaultKeyStore)
+    tmf.init(defaultKeyStore)
 
     tmf
   }
@@ -56,7 +54,5 @@ object DefaultDESCrypto extends KeySupport {
   val keyStorePass: String = "password"
   val keyAlias: String = "test"
 
-  val crypto = new CryptoMechanic(DES, getDefaultSecret)
-  crypto.setCharset("utf-8")
+  val crypto = new Crypto(DES, defaultSecret)
 }
-

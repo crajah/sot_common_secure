@@ -1,24 +1,20 @@
 package parallelai.common.secure
 
-import java.security.MessageDigest
-
 import org.scalatest._
 
-class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
-
+class CryptoSpec extends FlatSpec with Matchers {
   "AES" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(AES, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(AES, "Some secrrem is not a secret but secretly some".getBytes())
 
     val clear = "This is a new logic".getBytes()
-
     val ec_r = crypto.encrypt(clear)
-    val de_r = crypto.decrypt(ec_r.payload, ec_r.params).payload
+    val de_r = crypto.decrypt(ec_r.payload, ec_r.params)
 
-    clear shouldEqual de_r
+    clear shouldEqual de_r.payload
   }
 
   "DES" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(DES, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(DES, "Some secrrem is not a secret but secretly some".getBytes())
 
     val clear = "This is a new logic".getBytes()
 
@@ -29,88 +25,79 @@ class CryptoTest extends FlatSpec with Matchers with ConversionHelper {
   }
 
   "AES Signature" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(AES, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(AES, "Some secrrem is not a secret but secretly some".getBytes())
 
     val in = "Some crazy logic".getBytes()
 
     val s_p = crypto.getSignature(in)
 
-    println("AES Sig: " + toHexString(s_p))
+    println("AES Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "DES Signature" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(DES, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(DES, "Some secrrem is not a secret but secretly some".getBytes())
 
     val in = "Some crazy logic".getBytes()
 
     val s_p = crypto.getSignature(in)
 
-    println("DES Sig: " + toHexString(s_p))
+    println("DES Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS512 Signature" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(HS512, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(HS512, "Some secrrem is not a secret but secretly some".getBytes())
 
     val in = "Some crazy logic".getBytes()
 
     val s_p = crypto.getSignature(in)
 
-    println("HS512 Sig: " + toHexString(s_p))
+    println("HS512 Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS384 Signature" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(HS384, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(HS384, "Some secrrem is not a secret but secretly some".getBytes())
 
     val in = "Some crazy logic".getBytes()
 
     val s_p = crypto.getSignature(in)
 
-    println("HS384 Sig: " + toHexString(s_p))
+    println("HS384 Sig: " + Crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "HS256 Signature" should "encrypt and decrypt" in {
-    val crypto = new CryptoMechanic(HS256, "Some secrrem is not a secret but secretly some".getBytes()) {}
+    val crypto = new Crypto(HS256, "Some secrrem is not a secret but secretly some".getBytes())
 
     val in = "Some crazy logic".getBytes()
 
     val s_p = crypto.getSignature(in)
 
-    println("HS256 Sig: " + toHexString(s_p))
+    println("HS256 Sig: " + crypto.toHexString(s_p))
 
     in should not equal s_p
-
   }
 
   "B64 Bytes" should "encode and decode" in {
-    val ch = new ConversionHelper {}
-
     val in = "Thi sis a sone ggah".getBytes()
 
-    val b64 = ch.toB64(in)
-    val out = ch.fromB64(b64)
+    val b64 = Crypto.toB64(in)
+    val out = Crypto.fromB64(b64)
 
     in shouldEqual out
   }
 
   "B64 String" should "encode and decode" in {
-    val ch = new ConversionHelper {}
-
     val in = "Thi sis a sone ggah".getBytes()
 
-    val b64 = ch.toB64String(in)
-    val out = ch.fromB64String(b64)
+    val b64 = Crypto.toB64String(in)
+    val out = Crypto.fromB64String(b64)
 
     in shouldEqual out
   }
